@@ -114,20 +114,28 @@ function App() {
   };
 
   const validateConfig = (config: unknown): config is LotteryConfig => {
+    if (!config || typeof config !== 'object') return false;
+    
+    const obj = config as Record<string, unknown>;
+    
+    if (!obj.settings || typeof obj.settings !== 'object' || obj.settings === null) {
+      return false;
+    }
+    
+    const settings = obj.settings as Record<string, unknown>;
+    
     return (
-      config &&
-      typeof config.version === 'string' &&
-      typeof config.exportDate === 'string' &&
-      Array.isArray(config.prizes) &&
-      Array.isArray(config.participants) &&
-      config.settings &&
-      typeof config.settings.allowRepeat === 'boolean' &&
-      typeof config.settings.title === 'string' &&
-      config.prizes.every((prize: unknown) => 
+      typeof obj.version === 'string' &&
+      typeof obj.exportDate === 'string' &&
+      Array.isArray(obj.prizes) &&
+      Array.isArray(obj.participants) &&
+      typeof settings.allowRepeat === 'boolean' &&
+      typeof settings.title === 'string' &&
+      obj.prizes.every((prize: unknown) => 
         prize && typeof prize === 'object' && 'id' in prize && 'name' in prize && 'drawCount' in prize &&
         typeof (prize as { drawCount: unknown }).drawCount === 'number'
       ) &&
-      config.participants.every((participant: unknown) => 
+      obj.participants.every((participant: unknown) => 
         participant && typeof participant === 'object' && 'id' in participant && 'name' in participant
       )
     );
