@@ -26,6 +26,7 @@ function App() {
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
   const [winners, setWinners] = useState<Participant[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [isRealDrawing, setIsRealDrawing] = useState(false); // 實際抽獎狀態
   const [allResults, setAllResults] = useState<{ prize: Prize; winners: Participant[] }[]>([]);
 
   const completeSettings = () => {
@@ -41,6 +42,7 @@ function App() {
   };
 
   const startPrizeDraw = (prize: Prize) => {
+    console.log('🎯 Starting prize draw for:', prize.name);
     const availableParticipants = settings.allowRepeat 
       ? participants 
       : participants.filter(p => !p.isSelected);
@@ -52,12 +54,21 @@ function App() {
 
     setCurrentPrize(prize);
     setState('drawing');
-    setIsDrawing(true);
+    console.log('🎯 Setting isDrawing to true, isRealDrawing to false');
+    setIsDrawing(true); // 開始顯示動畫和播放音樂
+    setIsRealDrawing(false); // 但還沒開始實際抽獎
+  };
+
+  // 音樂播放完成後開始實際抽獎
+  const handleMusicComplete = () => {
+    console.log('🎯 handleMusicComplete called - setting isRealDrawing to true');
+    setIsRealDrawing(true);
   };
 
   const handleDrawComplete = (selectedWinners: Participant[]) => {
     setWinners(selectedWinners);
     setIsDrawing(false);
+    setIsRealDrawing(false);
     
     if (!settings.allowRepeat) {
       setParticipants(prev => prev.map(p => ({
@@ -241,7 +252,7 @@ function App() {
 
             <LotteryWheel
               participants={settings.allowRepeat ? participants : participants.filter(p => !p.isSelected)}
-              isDrawing={isDrawing}
+              isDrawing={isRealDrawing}
               onDrawComplete={handleDrawComplete}
               currentPrize={currentPrize}
               allowRepeat={settings.allowRepeat}
@@ -260,7 +271,7 @@ function App() {
         )}
       </main>
 
-      <MagicianAnimation isVisible={isDrawing} />
+      <MagicianAnimation isVisible={isDrawing} onMusicComplete={handleMusicComplete} />
     </div>
   );
 }

@@ -22,13 +22,18 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
   const [drawingId, setDrawingId] = useState<string>('');
 
   useEffect(() => {
+    console.log('🎲 LotteryWheel useEffect:', { isDrawing, currentPrize: currentPrize?.name });
+    
     if (!isDrawing || !currentPrize) {
+      console.log('🎲 Not drawing or no prize - resetting state');
       // 重置狀態
       setCurrentName('');
       setSelectedWinners([]);
       setShowProgressiveResults(false);
       return;
     }
+
+    console.log('🎲 Starting lottery animation for prize:', currentPrize.name);
 
     // 開始抽獎
     const availableParticipants = allowRepeat 
@@ -128,22 +133,6 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
-      <div className="relative">
-        <div className={`
-          text-4xl md:text-6xl font-bold text-center p-6 rounded-2xl
-          ${isDrawing 
-            ? 'bg-gradient-to-r from-orange-400 to-orange-600 text-white animate-pulse shadow-2xl' 
-            : 'bg-white text-gray-800 shadow-lg'
-          }
-          transition-all duration-300 min-w-[250px] md:min-w-[350px]
-        `}>
-          {currentName || '準備抽獎'}
-        </div>
-        {isDrawing && (
-          <div className="absolute -inset-4 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl opacity-20 animate-ping"></div>
-        )}
-      </div>
-
       {showProgressiveResults && selectedWinners.length > 0 && currentPrize && (
         <div className="w-full max-w-6xl">
           <div className="text-center mb-4">
