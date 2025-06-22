@@ -17,17 +17,20 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
   allowRepeat
 }) => {
   const [currentName, setCurrentName] = useState('');
-  const [animationSpeed, setAnimationSpeed] = useState(50);
   const [selectedWinners, setSelectedWinners] = useState<Participant[]>([]);
   const [showProgressiveResults, setShowProgressiveResults] = useState(false);
+  const [drawingId, setDrawingId] = useState<string>('');
 
   useEffect(() => {
     if (!isDrawing || !currentPrize) {
+      // 重置狀態
+      setCurrentName('');
       setSelectedWinners([]);
       setShowProgressiveResults(false);
       return;
     }
 
+    // 開始抽獎
     const availableParticipants = allowRepeat 
       ? participants 
       : participants.filter(p => !p.isSelected);
@@ -38,15 +41,14 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
       return;
     }
 
-    let duration = 0;
-    const maxDuration = 5000;
+    // 生成唯一ID
+    const drawId = Date.now().toString();
+    setDrawingId(drawId);
+
+    // 預選中獎者
     const winners: Participant[] = [];
     const selectedIndices = new Set<number>();
-    const drawCount = allowRepeat 
-      ? currentPrize.drawCount 
-      : Math.min(currentPrize.drawCount, availableParticipants.length);
-
-    console.log(`🎲 獎品: ${currentPrize.name}, 預計中獎人數: ${drawCount}`);
+    const drawCount = Math.min(currentPrize.drawCount, availableParticipants.length);
 
     for (let i = 0; i < drawCount; i++) {
       let randomIndex;
@@ -55,15 +57,10 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
         winners.push(availableParticipants[randomIndex]);
       } else {
         let attempts = 0;
-        const maxAttempts = availableParticipants.length * 2;
         do {
           randomIndex = Math.floor(Math.random() * availableParticipants.length);
           attempts++;
-        } while (
-          selectedIndices.has(randomIndex) &&
-          attempts < maxAttempts &&
-          selectedIndices.size < availableParticipants.length
-        );
+        } while (selectedIndices.has(randomIndex) && attempts < 50);
 
         if (!selectedIndices.has(randomIndex)) {
           selectedIndices.add(randomIndex);
@@ -72,68 +69,62 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
       }
     }
 
-    console.log(`🏆 預選中獎者: ${winners.length} 人`);
-
-    if (drawCount > 5) {
+    // 是否顯示漸進式結果
+    const useProgressiveResults = drawCount > 5;
+    if (useProgressiveResults) {
       setShowProgressiveResults(true);
     }
 
-    let currentWinnerIndex = 0;
+    // 動畫參數
+    let duration = 0;
+    const maxDuration = 3000;
+    let revealedCount = 0;
     const winnerRevealInterval = maxDuration / Math.max(drawCount, 1);
 
-    const interval = window.setInterval(() => {
+    // 開始動畫
+    const interval = setInterval(() => {
+      // 隨機顯示名字
       const randomIndex = Math.floor(Math.random() * availableParticipants.length);
-      setCurrentName(availableParticipants[randomIndex]?.name || '');
-      duration += animationSpeed;
+      const randomName = availableParticipants[randomIndex]?.name || '';
+      setCurrentName(randomName);
+      
+      duration += 50;
 
-      if (duration > maxDuration * 0.6) {
-        setAnimationSpeed(prev => Math.min(prev + 15, 150));
-      }
-
-      if (showProgressiveResults && currentWinnerIndex < winners.length) {
-        const revealTime = (currentWinnerIndex + 1) * winnerRevealInterval;
-        
-        if (duration >= revealTime) {
-          console.log(`🎊 Revealing winner ${currentWinnerIndex + 1}/${winners.length}:`, winners[currentWinnerIndex]?.name);
-          setSelectedWinners(prev => {
-            const newList = [...prev, winners[currentWinnerIndex]];
-            console.log(`📊 Current displayed winners: ${newList.length}/${winners.length}`);
-            return newList;
-          });
-          currentWinnerIndex++;
+      // 漸進式顯示中獎者
+      if (useProgressiveResults && revealedCount < winners.length) {
+        const nextRevealTime = (revealedCount + 1) * winnerRevealInterval;
+        if (duration >= nextRevealTime) {
+          setSelectedWinners(prev => [...prev, winners[revealedCount]]);
+          revealedCount++;
         }
       }
 
-      const allWinnersRevealed = showProgressiveResults ? currentWinnerIndex >= winners.length : true;
-
-      if (duration >= maxDuration || (showProgressiveResults && allWinnersRevealed && duration >= maxDuration * 0.8)) {
-        console.log(`🎉 抽獎完成! 實際中獎人數: ${winners.length}`);
+      // 完成抽獎
+      if (duration >= maxDuration) {
         clearInterval(interval);
 
-        if (showProgressiveResults && currentWinnerIndex < winners.length) {
+        // 確保所有中獎者都顯示
+        if (useProgressiveResults && revealedCount < winners.length) {
           setSelectedWinners(winners);
         }
 
+        // 顯示最後中獎者
         if (winners.length > 0) {
           setCurrentName(winners[winners.length - 1].name);
         }
 
+        // 完成回調
         setTimeout(() => {
           onDrawComplete(winners);
         }, 500);
       }
-    }, animationSpeed);
+    }, 50);
 
+    // 清理函數
     return () => {
       clearInterval(interval);
     };
-  }, [isDrawing, participants, currentPrize, allowRepeat, onDrawComplete, animationSpeed, showProgressiveResults]);
-
-  useEffect(() => {
-    if (isDrawing) {
-      setAnimationSpeed(50);
-    }
-  }, [isDrawing]);
+  }, [isDrawing, currentPrize, participants, allowRepeat, onDrawComplete]);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
@@ -163,7 +154,7 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {selectedWinners.map((winner, index) => winner && (
               <div
-                key={`${winner.id}-${index}`}
+                key={`${drawingId}-${winner.id}-${index}`}
                 className="bg-gradient-to-br from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-300"
                 style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both` }}
               >
