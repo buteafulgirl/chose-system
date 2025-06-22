@@ -1,15 +1,19 @@
 import React from 'react';
-import { Settings } from 'lucide-react';
+import { Settings, Download, Upload } from 'lucide-react';
 import { LotterySettings as LotterySettingsType } from '../types/lottery';
 
 interface LotterySettingsProps {
   settings: LotterySettingsType;
   onSettingsChange: (settings: LotterySettingsType) => void;
+  onExportConfig?: () => void;
+  onImportConfig?: (event: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const LotterySettings: React.FC<LotterySettingsProps> = ({ 
   settings, 
-  onSettingsChange 
+  onSettingsChange,
+  onExportConfig,
+  onImportConfig
 }) => {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
@@ -48,6 +52,39 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
             勾選後，同一人可以在多次抽獎中重複中獎
           </p>
         </div>
+
+        {(onExportConfig || onImportConfig) && (
+          <div className="border-t pt-4 mt-4">
+            <h4 className="text-lg font-semibold text-gray-700 mb-3">匯出/匯入設定</h4>
+            <div className="flex flex-col sm:flex-row gap-3">
+              {onExportConfig && (
+                <button
+                  onClick={onExportConfig}
+                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                >
+                  <Download size={16} />
+                  匯出設定
+                </button>
+              )}
+              
+              {onImportConfig && (
+                <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
+                  <Upload size={16} />
+                  匯入設定
+                  <input
+                    type="file"
+                    accept=".json"
+                    onChange={onImportConfig}
+                    className="hidden"
+                  />
+                </label>
+              )}
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              匯出設定可保存當前的獎項、參與者和設定；匯入設定會覆蓋目前所有資料
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

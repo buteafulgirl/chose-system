@@ -7,7 +7,7 @@ import { LotteryOverview } from './components/LotteryOverview';
 import { LotteryWheel } from './components/LotteryWheel';
 import { LotteryResults } from './components/LotteryResults';
 import { MagicianAnimation } from './components/MagicianAnimation';
-import { Prize, Participant, LotterySettings as LotterySettingsType } from './types/lottery';
+import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig } from './types/lottery';
 
 type AppState = 'setup' | 'overview' | 'drawing' | 'results';
 
@@ -16,7 +16,7 @@ function App() {
   const [prizes, setPrizes] = useState<Prize[]>([
     { id: '1', name: '特等獎', drawCount: 1 },
     { id: '2', name: '一等獎', drawCount: 2 },
-    { id: '3', name: '二等獎', drawCount: 3 }
+    { id: '3', name: '二等獎', drawCount: 6 }
   ]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [settings, setSettings] = useState<LotterySettingsType>({
@@ -93,6 +93,79 @@ function App() {
     setState('setup');
   };
 
+  const exportConfig = () => {
+    const config: LotteryConfig = {
+      version: '1.0.0',
+      exportDate: new Date().toISOString(),
+      prizes,
+      participants,
+      settings
+    };
+
+    const dataStr = JSON.stringify(config, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+    
+    const exportFileDefaultName = `lottery-config-${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-')}.json`;
+    
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  };
+
+  const validateConfig = (config: unknown): config is LotteryConfig => {
+    return (
+      config &&
+      typeof config.version === 'string' &&
+      typeof config.exportDate === 'string' &&
+      Array.isArray(config.prizes) &&
+      Array.isArray(config.participants) &&
+      config.settings &&
+      typeof config.settings.allowRepeat === 'boolean' &&
+      typeof config.settings.title === 'string' &&
+      config.prizes.every((prize: unknown) => 
+        prize && typeof prize === 'object' && 'id' in prize && 'name' in prize && 'drawCount' in prize &&
+        typeof (prize as { drawCount: unknown }).drawCount === 'number'
+      ) &&
+      config.participants.every((participant: unknown) => 
+        participant && typeof participant === 'object' && 'id' in participant && 'name' in participant
+      )
+    );
+  };
+
+  const importConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const configData = JSON.parse(e.target?.result as string);
+        
+        if (!validateConfig(configData)) {
+          alert('⚠️ 匯入失敗：檔案格式不正確！');
+          return;
+        }
+
+        const confirmMessage = `確定要匯入設定嗎？這將會覆蓋目前的設定。\n\n匯入資料：\n- 獎項：${configData.prizes.length} 個\n- 參與者：${configData.participants.length} 人\n- 匯出時間：${new Date(configData.exportDate).toLocaleString()}`;
+        
+        if (window.confirm(confirmMessage)) {
+          setPrizes(configData.prizes);
+          setParticipants(configData.participants.map((p: Participant) => ({ ...p, isSelected: false })));
+          setSettings(configData.settings);
+          setAllResults([]);
+          setState('setup');
+          alert('✅ 設定匯入成功！');
+        }
+      } catch {
+        alert('⚠️ 匯入失敗：無法解析檔案內容！');
+      }
+    };
+    
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
       <header className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
@@ -114,7 +187,12 @@ function App() {
             </div>
 
             <div className="max-w-md mx-auto">
-              <LotterySettings settings={settings} onSettingsChange={setSettings} />
+              <LotterySettings 
+                settings={settings} 
+                onSettingsChange={setSettings}
+                onExportConfig={exportConfig}
+                onImportConfig={importConfig}
+              />
             </div>
 
             <div className="text-center">

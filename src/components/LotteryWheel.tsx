@@ -38,7 +38,6 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
       return;
     }
 
-    let interval: number;
     let duration = 0;
     const maxDuration = 5000;
     const winners: Participant[] = [];
@@ -82,7 +81,7 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
     let currentWinnerIndex = 0;
     const winnerRevealInterval = maxDuration / Math.max(drawCount, 1);
 
-    interval = window.setInterval(() => {
+    const interval = window.setInterval(() => {
       const randomIndex = Math.floor(Math.random() * availableParticipants.length);
       setCurrentName(availableParticipants[randomIndex]?.name || '');
       duration += animationSpeed;
@@ -128,7 +127,7 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
     return () => {
       clearInterval(interval);
     };
-  }, [isDrawing, participants, currentPrize, allowRepeat, onDrawComplete]);
+  }, [isDrawing, participants, currentPrize, allowRepeat, onDrawComplete, animationSpeed, showProgressiveResults]);
 
   useEffect(() => {
     if (isDrawing) {
