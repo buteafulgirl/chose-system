@@ -37,7 +37,6 @@ function App() {
       alert('請先新增獎項！');
       return;
     }
-
     setState('overview');
   };
 
@@ -60,20 +59,18 @@ function App() {
     setWinners(selectedWinners);
     setIsDrawing(false);
     
-    // Mark winners as selected if repeat is not allowed
     if (!settings.allowRepeat) {
       setParticipants(prev => prev.map(p => ({
         ...p,
         isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
       })));
     }
-    
-    // Add to results
+
     if (currentPrize) {
       const newResult = { prize: currentPrize, winners: selectedWinners };
       setAllResults(prev => [...prev, newResult]);
     }
-    
+
     setState('results');
   };
 
@@ -83,7 +80,6 @@ function App() {
     setCurrentPrize(null);
     setIsDrawing(false);
     setAllResults([]);
-    // Reset selection status
     setParticipants(prev => prev.map(p => ({ ...p, isSelected: false })));
   };
 
@@ -99,7 +95,6 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
-      {/* Header */}
       <header className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold text-center flex items-center justify-center gap-3">
@@ -115,12 +110,9 @@ function App() {
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <PrizeManager prizes={prizes} onPrizesChange={setPrizes} />
-              <ParticipantManager 
-                participants={participants} 
-                onParticipantsChange={setParticipants} 
-              />
+              <ParticipantManager participants={participants} onParticipantsChange={setParticipants} />
             </div>
-            
+
             <div className="max-w-md mx-auto">
               <LotterySettings settings={settings} onSettingsChange={setSettings} />
             </div>
@@ -154,10 +146,13 @@ function App() {
             <div className="text-center">
               <h2 className="text-3xl font-bold text-gray-800 mb-2">正在抽取</h2>
               <div className="text-2xl text-orange-600 font-semibold">
-                {currentPrize?.name} ({currentPrize?.drawCount} 人)
+                {currentPrize?.name}（實際抽出 {currentPrize ? Math.min(
+                  currentPrize.drawCount,
+                  settings.allowRepeat ? participants.length : participants.filter(p => !p.isSelected).length
+                ) : 0} 人）
               </div>
             </div>
-            
+
             <LotteryWheel
               participants={settings.allowRepeat ? participants : participants.filter(p => !p.isSelected)}
               isDrawing={isDrawing}

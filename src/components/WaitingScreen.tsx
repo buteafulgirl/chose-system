@@ -45,7 +45,7 @@ export const WaitingScreen: React.FC<WaitingScreenProps> = ({
             <h3 className="text-lg font-bold text-gray-800">獎項設定</h3>
           </div>
           <div className="space-y-2">
-            {prizes.map((prize, index) => (
+            {prizes.map((prize) => (
               <div key={prize.id} className="flex justify-between items-center text-sm">
                 <span className="text-gray-700">{prize.name}</span>
                 <span className="text-orange-600 font-medium">{prize.drawCount} 人</span>

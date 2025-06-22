@@ -28,44 +28,53 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
       return;
     }
 
-    let interval: NodeJS.Timeout;
-    let duration = 0;
-    const maxDuration = 5000; // Fixed 5 seconds maximum
-    const winners: Participant[] = [];
     const availableParticipants = allowRepeat 
       ? participants 
       : participants.filter(p => !p.isSelected);
-    
-    // Pre-select all winners with proper logic
-    const selectedIndices = new Set<number>();
-    const drawCount = Math.min(currentPrize.drawCount, availableParticipants.length);
-    
-    // Fix: Ensure we don't draw more than available participants
-    for (let i = 0; i < drawCount; i++) {
-      let randomIndex;
-      let attempts = 0;
-      const maxAttempts = availableParticipants.length * 2; // Prevent infinite loop
-      
-      do {
-        randomIndex = Math.floor(Math.random() * availableParticipants.length);
-        attempts++;
-      } while (
-        !allowRepeat && 
-        selectedIndices.has(randomIndex) && 
-        attempts < maxAttempts &&
-        selectedIndices.size < availableParticipants.length
-      );
-      
-      // If we can't find a unique participant and repeat is not allowed, break
-      if (!allowRepeat && selectedIndices.has(randomIndex) && selectedIndices.size >= availableParticipants.length) {
-        break;
-      }
-      
-      selectedIndices.add(randomIndex);
-      winners.push(availableParticipants[randomIndex]);
+
+    if (availableParticipants.length < currentPrize.drawCount) {
+      alert(`⚠️ 抽獎失敗：${currentPrize.name} 需要 ${currentPrize.drawCount} 人，僅有 ${availableParticipants.length} 人可抽。`);
+      onDrawComplete([]);
+      return;
     }
 
-    // Show progressive results for more than 5 winners
+    let interval: number;
+    let duration = 0;
+    const maxDuration = 5000;
+    const winners: Participant[] = [];
+    const selectedIndices = new Set<number>();
+    const drawCount = allowRepeat 
+      ? currentPrize.drawCount 
+      : Math.min(currentPrize.drawCount, availableParticipants.length);
+
+    console.log(`🎲 獎品: ${currentPrize.name}, 預計中獎人數: ${drawCount}`);
+
+    for (let i = 0; i < drawCount; i++) {
+      let randomIndex;
+      if (allowRepeat) {
+        randomIndex = Math.floor(Math.random() * availableParticipants.length);
+        winners.push(availableParticipants[randomIndex]);
+      } else {
+        let attempts = 0;
+        const maxAttempts = availableParticipants.length * 2;
+        do {
+          randomIndex = Math.floor(Math.random() * availableParticipants.length);
+          attempts++;
+        } while (
+          selectedIndices.has(randomIndex) &&
+          attempts < maxAttempts &&
+          selectedIndices.size < availableParticipants.length
+        );
+
+        if (!selectedIndices.has(randomIndex)) {
+          selectedIndices.add(randomIndex);
+          winners.push(availableParticipants[randomIndex]);
+        }
+      }
+    }
+
+    console.log(`🏆 預選中獎者: ${winners.length} 人`);
+
     if (drawCount > 5) {
       setShowProgressiveResults(true);
     }
@@ -73,49 +82,53 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
     let currentWinnerIndex = 0;
     const winnerRevealInterval = maxDuration / Math.max(drawCount, 1);
 
-    const animate = () => {
-      interval = setInterval(() => {
-        const randomIndex = Math.floor(Math.random() * participants.length);
-        setCurrentName(participants[randomIndex]?.name || '');
-        
-        duration += animationSpeed;
-        
-        // Gradually slow down
-        if (duration > maxDuration * 0.6) {
-          setAnimationSpeed(prev => Math.min(prev + 15, 150));
-        }
+    interval = window.setInterval(() => {
+      const randomIndex = Math.floor(Math.random() * availableParticipants.length);
+      setCurrentName(availableParticipants[randomIndex]?.name || '');
+      duration += animationSpeed;
 
-        // Progressive winner reveal for more than 5 winners
+      if (duration > maxDuration * 0.6) {
+        setAnimationSpeed(prev => Math.min(prev + 15, 150));
+      }
+
+      if (showProgressiveResults && currentWinnerIndex < winners.length) {
+        const revealTime = (currentWinnerIndex + 1) * winnerRevealInterval;
+        
+        if (duration >= revealTime) {
+          console.log(`🎊 Revealing winner ${currentWinnerIndex + 1}/${winners.length}:`, winners[currentWinnerIndex]?.name);
+          setSelectedWinners(prev => {
+            const newList = [...prev, winners[currentWinnerIndex]];
+            console.log(`📊 Current displayed winners: ${newList.length}/${winners.length}`);
+            return newList;
+          });
+          currentWinnerIndex++;
+        }
+      }
+
+      const allWinnersRevealed = showProgressiveResults ? currentWinnerIndex >= winners.length : true;
+
+      if (duration >= maxDuration || (showProgressiveResults && allWinnersRevealed && duration >= maxDuration * 0.8)) {
+        console.log(`🎉 抽獎完成! 實際中獎人數: ${winners.length}`);
+        clearInterval(interval);
+
         if (showProgressiveResults && currentWinnerIndex < winners.length) {
-          const revealTime = (currentWinnerIndex + 1) * winnerRevealInterval;
-          if (duration >= revealTime) {
-            setSelectedWinners(prev => [...prev, winners[currentWinnerIndex]]);
-            currentWinnerIndex++;
-          }
+          setSelectedWinners(winners);
         }
-        
-        if (duration >= maxDuration) {
-          clearInterval(interval);
-          
-          // Show final winner in the wheel
-          if (winners.length > 0) {
-            setCurrentName(winners[winners.length - 1].name);
-          }
-          
-          // Complete the drawing
-          setTimeout(() => {
-            onDrawComplete(winners);
-          }, 500);
-        }
-      }, animationSpeed);
-    };
 
-    animate();
+        if (winners.length > 0) {
+          setCurrentName(winners[winners.length - 1].name);
+        }
+
+        setTimeout(() => {
+          onDrawComplete(winners);
+        }, 500);
+      }
+    }, animationSpeed);
 
     return () => {
-      if (interval) clearInterval(interval);
+      clearInterval(interval);
     };
-  }, [isDrawing, participants, currentPrize, allowRepeat, animationSpeed, onDrawComplete, showProgressiveResults]);
+  }, [isDrawing, participants, currentPrize, allowRepeat, onDrawComplete]);
 
   useEffect(() => {
     if (isDrawing) {
@@ -125,7 +138,6 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] space-y-8">
-      {/* Main lottery wheel */}
       <div className="relative">
         <div className={`
           text-4xl md:text-6xl font-bold text-center p-6 rounded-2xl
@@ -137,13 +149,11 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
         `}>
           {currentName || '準備抽獎'}
         </div>
-        
         {isDrawing && (
           <div className="absolute -inset-4 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl opacity-20 animate-ping"></div>
         )}
       </div>
 
-      {/* Progressive results display for more than 5 winners */}
       {showProgressiveResults && selectedWinners.length > 0 && currentPrize && (
         <div className="w-full max-w-6xl">
           <div className="text-center mb-4">
@@ -151,15 +161,12 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
               已抽中名單 ({selectedWinners.length}/{currentPrize.drawCount})
             </h3>
           </div>
-          
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {selectedWinners.map((winner, index) => (
+            {selectedWinners.map((winner, index) => winner && (
               <div
                 key={`${winner.id}-${index}`}
                 className="bg-gradient-to-br from-yellow-100 to-orange-100 p-4 rounded-lg shadow-md transform hover:scale-105 transition-all duration-300"
-                style={{ 
-                  animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both`
-                }}
+                style={{ animation: `fadeInUp 0.5s ease-out ${index * 0.1}s both` }}
               >
                 <div className="text-lg font-bold text-gray-800 text-center">
                   {winner.name}
@@ -170,7 +177,7 @@ export const LotteryWheel: React.FC<LotteryWheelProps> = ({
         </div>
       )}
 
-      <style jsx>{`
+      <style>{`
         @keyframes fadeInUp {
           from {
             opacity: 0;
