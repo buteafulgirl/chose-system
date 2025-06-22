@@ -13,7 +13,7 @@ export const MagicianAnimation: React.FC<MagicianAnimationProps> = ({ isVisible 
         {isVisible ? (
           // Use GIF during drawing
           <img 
-            src="/Mi動畫.gif" 
+            src="/mi-animation.gif" 
             alt="Magic Animation"
             className="w-full h-full object-contain drop-shadow-lg"
             onError={(e) => {
