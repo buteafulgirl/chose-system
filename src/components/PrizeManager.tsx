@@ -10,44 +10,46 @@ interface PrizeManagerProps {
 export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChange }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
-  const [editDrawCount, setEditDrawCount] = useState(1);
+  const [editDrawCount, setEditDrawCount] = useState('1');
   const [newPrize, setNewPrize] = useState('');
-  const [newDrawCount, setNewDrawCount] = useState(1);
+  const [newDrawCount, setNewDrawCount] = useState('1');
 
   const addPrize = () => {
     if (newPrize.trim()) {
+      const drawCount = Math.max(1, parseInt(newDrawCount) || 1);
       const prize: Prize = {
         id: Date.now().toString(),
         name: newPrize.trim(),
-        drawCount: newDrawCount
+        drawCount
       };
       onPrizesChange([...prizes, prize]);
       setNewPrize('');
-      setNewDrawCount(1);
+      setNewDrawCount('1');
     }
   };
 
   const startEdit = (prize: Prize) => {
     setEditingId(prize.id);
     setEditValue(prize.name);
-    setEditDrawCount(prize.drawCount);
+    setEditDrawCount(prize.drawCount.toString());
   };
 
   const saveEdit = () => {
     if (editValue.trim()) {
+      const drawCount = Math.max(1, parseInt(editDrawCount) || 1);
       onPrizesChange(prizes.map(p => 
-        p.id === editingId ? { ...p, name: editValue.trim(), drawCount: editDrawCount } : p
+        p.id === editingId ? { ...p, name: editValue.trim(), drawCount } : p
       ));
     }
     setEditingId(null);
     setEditValue('');
-    setEditDrawCount(1);
+    setEditDrawCount('1');
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditValue('');
-    setEditDrawCount(1);
+    setEditDrawCount('1');
   };
 
   const deletePrize = (id: string) => {
@@ -79,11 +81,11 @@ export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChan
                 <div className="flex items-center gap-2">
                   <label className="text-sm font-medium text-gray-700 whitespace-nowrap">抽獎人數:</label>
                   <input
-                    type="number"
-                    min="1"
+                    type="text"
                     value={editDrawCount}
-                    onChange={(e) => setEditDrawCount(parseInt(e.target.value) || 1)}
+                    onChange={(e) => setEditDrawCount(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                    placeholder="1"
                   />
                 </div>
                 <div className="flex gap-2">
@@ -141,11 +143,11 @@ export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChan
         <div className="flex items-center gap-2">
           <label className="text-sm font-medium text-gray-700 whitespace-nowrap">抽獎人數:</label>
           <input
-            type="number"
-            min="1"
+            type="text"
             value={newDrawCount}
-            onChange={(e) => setNewDrawCount(parseInt(e.target.value) || 1)}
+            onChange={(e) => setNewDrawCount(e.target.value)}
             className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+            placeholder="1"
           />
         </div>
         <button
