@@ -7,14 +7,13 @@ interface PreparationPhaseProps {
 export const PreparationPhase: React.FC<PreparationPhaseProps> = ({ onComplete }) => {
   const [countdown, setCountdown] = useState(3);
   const onCompleteRef = useRef(onComplete);
-  const intervalIdRef = useRef<NodeJS.Timeout | null>(null);
-  const timeoutIdRef = useRef<NodeJS.Timeout | null>(null); // 用於清理 onComplete 的 setTimeout
+  const intervalIdRef = useRef<number | null>(null);
+  const timeoutIdRef = useRef<number | null>(null);
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
-  // 倒數計時的 useEffect，只在組件首次掛載時啟動
   useEffect(() => {
     intervalIdRef.current = setInterval(() => {
       setCountdown(prev => {
@@ -23,88 +22,157 @@ export const PreparationPhase: React.FC<PreparationPhaseProps> = ({ onComplete }
             clearInterval(intervalIdRef.current);
             intervalIdRef.current = null;
           }
-          return 0; // 倒數結束
+          return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    // 清理函數：組件卸載時清除 interval
     return () => {
       if (intervalIdRef.current) {
         clearInterval(intervalIdRef.current);
         intervalIdRef.current = null;
       }
     };
-  }, []); // 空依賴陣列確保只執行一次
+  }, []);
 
-  // 處理倒數結束後呼叫 onComplete 的 useEffect
   useEffect(() => {
     if (countdown === 0) {
-      // 設置一個 timeout 來呼叫 onComplete
       timeoutIdRef.current = setTimeout(() => {
         console.log('>>> PreparationPhase: ABOUT TO CALL onComplete');
         onCompleteRef.current();
         console.log('<<< PreparationPhase: onComplete CALLED');
-      }, 500); // 等待 500ms 顯示 "開始！"
+      }, 500);
     }
 
-    // 清理函數：組件卸載時，或者當 countdown 不再是 0 時，清除 setTimeout
     return () => {
       if (timeoutIdRef.current) {
         clearTimeout(timeoutIdRef.current);
         timeoutIdRef.current = null;
       }
     };
-  }, [countdown]); // 依賴 countdown，當 countdown 變為 0 時觸發，或當 countdown 改變而不再是 0 時清理
+  }, [countdown]);
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900 flex items-center justify-center">
-      {/* Background particles */}
-      <div className="absolute inset-0 overflow-hidden">
-        {[...Array(20)].map((_, i) => (
+    <div className="fixed inset-0 bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 flex items-center justify-center overflow-hidden">
+      {/* Animated background waves */}
+      <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 animate-pulse" />
+        <div 
+          className="absolute inset-0 bg-gradient-to-l from-pink-500/10 to-blue-500/10"
+          style={{
+            animation: 'wave 3s ease-in-out infinite',
+          }}
+        />
+      </div>
+
+      {/* Floating particles */}
+      <div className="absolute inset-0">
+        {[...Array(15)].map((_, i) => (
           <div
             key={i}
-            className="absolute w-2 h-2 bg-white rounded-full opacity-30 animate-pulse"
+            className="absolute w-3 h-3 rounded-full bg-gradient-to-r from-yellow-400 to-pink-400 opacity-60"
             style={{
               left: `${Math.random() * 100}%`,
               top: `${Math.random() * 100}%`,
+              animation: `float ${3 + Math.random() * 4}s ease-in-out infinite`,
               animationDelay: `${Math.random() * 2}s`,
-              animationDuration: `${2 + Math.random() * 3}s`
             }}
           />
         ))}
       </div>
 
-      {/* Countdown display */}
+      {/* Main countdown */}
       <div className="relative z-10 text-center">
         {countdown > 0 && (
           <div className="relative">
-            <div className="text-9xl font-bold text-white mb-4 animate-bounce">
+            {/* 主要數字與光暈效果 */}
+            <div 
+              className="text-8xl md:text-9xl font-black text-white select-none"
+              style={{
+                filter: `drop-shadow(0 0 20px rgba(255, 255, 255, 0.8)) drop-shadow(0 0 40px rgba(59, 130, 246, 0.6))`,
+                animation: 'pulse-scale 1s ease-in-out infinite',
+                textShadow: '0 0 30px rgba(255, 255, 255, 0.5), 0 0 60px rgba(59, 130, 246, 0.3)',
+              }}
+            >
               {countdown}
             </div>
-
-            {/* Expanding ring effect */}
-            <div
-              className="absolute inset-0 border-4 border-white rounded-full animate-ping"
-              style={{
-                width: '200px',
-                height: '200px',
-                margin: 'auto',
-                top: '50%',
-                left: '50%',
-                transform: 'translate(-50%, -50%)'
-              }}
-            />
+            
+            {/* 準備文字 */}
+            <div className="mt-6 text-xl md:text-2xl font-semibold text-blue-200 animate-bounce">
+              準備中...
+            </div>
           </div>
         )}
 
         {countdown === 0 && (
-          <div className="text-6xl font-bold text-yellow-400 animate-pulse">
-            開始！
+          <div className="relative">
+            <div 
+              className="text-6xl md:text-7xl font-black bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 bg-clip-text text-transparent animate-pulse"
+              style={{
+                filter: 'drop-shadow(0 0 20px rgba(255, 193, 7, 0.8))',
+                animation: 'celebrate 0.5s ease-out',
+              }}
+            >
+              開始！
+            </div>
+            
+            {/* 慶祝粒子效果 */}
+            {[...Array(12)].map((_, i) => (
+              <div
+                key={i}
+                className="absolute w-4 h-4 rounded-full bg-gradient-to-r from-yellow-400 to-orange-500"
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  animation: `explode 0.8s ease-out ${i * 0.1}s`,
+                  transform: `rotate(${i * 30}deg) translateY(-100px)`,
+                  opacity: 0,
+                }}
+              />
+            ))}
           </div>
         )}
       </div>
+
+      {/* CSS動畫樣式 */}
+      <style dangerouslySetInnerHTML={{
+        __html: `
+          @keyframes pulse-scale {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+          }
+          
+          @keyframes wave {
+            0%, 100% { transform: translateX(-50px) rotate(0deg); }
+            50% { transform: translateX(50px) rotate(180deg); }
+          }
+          
+          @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(180deg); }
+          }
+          
+          @keyframes celebrate {
+            0% { transform: scale(0.8); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+          }
+          
+          @keyframes explode {
+            0% { 
+              transform: translateY(0); 
+              opacity: 1; 
+              scale: 0;
+            }
+            100% { 
+              transform: translateY(-150px); 
+              opacity: 0; 
+              scale: 1;
+            }
+          }
+        `
+      }} />
     </div>
   );
 };

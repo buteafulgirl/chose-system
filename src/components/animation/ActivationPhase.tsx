@@ -18,8 +18,8 @@ export const ActivationPhase: React.FC<ActivationPhaseProps> = ({ onComplete }) 
 
   useEffect(() => {
     // 定時器 ID，用於清理
-    let magicCircleTimer: NodeJS.Timeout | undefined;
-    let fallbackTimer: NodeJS.Timeout | undefined;
+    let magicCircleTimer: number | undefined;
+    let fallbackTimer: number | undefined;
     let audio: HTMLAudioElement | null = null; // 在這個作用域內聲明 audio 變量
 
     // 步驟 1: 顯示魔法圈

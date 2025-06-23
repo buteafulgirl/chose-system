@@ -3,7 +3,6 @@ import { AnimationState, Participant, Prize } from '../types/lottery';
 import { PreparationPhase } from './animation/PreparationPhase';
 import { ActivationPhase } from './animation/ActivationPhase';
 import { RevelationPhase } from './animation/RevelationPhase';
-import { CelebrationPhase } from './animation/CelebrationPhase';
 
 interface LotteryAnimationProps {
   isVisible: boolean;
@@ -80,7 +79,7 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
       )}
       
       {currentPhase === 'celebrating' && (
-        <CelebrationPhase 
+        <RevelationPhase 
           winners={winners}
           prize={prize}
           onBackToOverview={() => {
