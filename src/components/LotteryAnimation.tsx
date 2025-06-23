@@ -75,6 +75,7 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
           winners={winners}
           prize={prize}
           onComplete={() => {
+            console.log('🎯 LotteryAnimation: Revealing phase complete, transitioning to celebrating');
             onComplete(winners);
             handlePhaseComplete('celebrating');
           }} 

@@ -36,20 +36,10 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
     // Show explosion effect immediately
     setShowExplosion(true);
     
-    // Reveal winners one by one
-    const revealTimers: number[] = [];
-    
-    winners.forEach((winner, i) => {
-      const delay = i === 0 ? 1000 : 1000 + (i * 800);
-      const timer = setTimeout(() => {
-        setRevealedWinners(prev => [...prev, winner]);
-      }, delay);
-      revealTimers.push(timer);
-    });
-    
-    // Start celebration after all winners are revealed + 2 seconds
-    const totalRevealTime = winners.length === 0 ? 1000 : 1000 + (winners.length - 1) * 800;
-    const celebrationTimer = setTimeout(() => {
+    // If we have navigation buttons, we're in celebrating phase - show celebration immediately
+    if (onBackToOverview && onReset) {
+      console.log('🎊 RevelationPhase: In celebrating phase, showing winners immediately');
+      setRevealedWinners(winners);
       setShowCelebration(true);
       
       // Initialize confetti
@@ -65,13 +55,34 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
         size: 4 + Math.random() * 8
       }));
       setConfetti(initialConfetti);
+      return;
+    }
+    
+    // Otherwise, we're in revealing phase - reveal winners one by one
+    const revealTimers: number[] = [];
+    
+    winners.forEach((winner, i) => {
+      const delay = i === 0 ? 1000 : 1000 + (i * 800);
+      const timer = setTimeout(() => {
+        setRevealedWinners(prev => [...prev, winner]);
+      }, delay);
+      revealTimers.push(timer);
+    });
+    
+    // Call onComplete to transition to celebrating phase after all winners are revealed
+    const totalRevealTime = winners.length === 0 ? 1000 : 1000 + (winners.length - 1) * 800;
+    const completeTimer = setTimeout(() => {
+      if (onCompleteRef.current) {
+        console.log('🎊 RevelationPhase: Calling onComplete to transition to celebrating phase');
+        onCompleteRef.current();
+      }
     }, totalRevealTime + 2000);
     
     return () => {
       revealTimers.forEach(timer => clearTimeout(timer));
-      clearTimeout(celebrationTimer);
+      clearTimeout(completeTimer);
     };
-  }, [winners]);
+  }, [winners, onBackToOverview, onReset]);
 
   // Animate confetti
   useEffect(() => {
