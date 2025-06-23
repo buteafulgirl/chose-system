@@ -86,13 +86,17 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
           winners={winners}
           prize={prize}
           onBackToOverview={() => {
+            console.log('🎯 LotteryAnimation: onBackToOverview called');
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
+            console.log('🎯 About to call parent onBackToOverview:', onBackToOverview);
             onBackToOverview?.();
           }}
           onReset={() => {
+            console.log('🎯 LotteryAnimation: onReset called');
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
+            console.log('🎯 About to call parent onReset:', onReset);
             onReset?.();
           }}
         />

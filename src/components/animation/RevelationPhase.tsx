@@ -37,7 +37,7 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
     setShowExplosion(true);
     
     // Reveal winners one by one
-    const revealTimers: NodeJS.Timeout[] = [];
+    const revealTimers: number[] = [];
     
     winners.forEach((winner, i) => {
       const delay = i === 0 ? 1000 : 1000 + (i * 800);
@@ -179,7 +179,15 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
             {/* Navigation buttons */}
             <div className="flex flex-col sm:flex-row gap-6 justify-center items-center">
               <button
-                onClick={onBackToOverview}
+                onClick={() => {
+                  console.log('🔄 RevelationPhase: Back to Overview button clicked');
+                  console.log('🔄 onBackToOverview function:', onBackToOverview);
+                  if (onBackToOverview) {
+                    onBackToOverview();
+                  } else {
+                    console.error('❌ onBackToOverview is not defined');
+                  }
+                }}
                 className="px-12 py-6 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors font-semibold flex items-center gap-3 shadow-lg transform hover:scale-105 text-2xl md:text-3xl"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -190,7 +198,15 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
               </button>
               
               <button
-                onClick={onReset}
+                onClick={() => {
+                  console.log('🔄 RevelationPhase: Reset button clicked');
+                  console.log('🔄 onReset function:', onReset);
+                  if (onReset) {
+                    onReset();
+                  } else {
+                    console.error('❌ onReset is not defined');
+                  }
+                }}
                 className="px-12 py-6 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-semibold flex items-center gap-3 shadow-lg transform hover:scale-105 text-2xl md:text-3xl"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -85,6 +85,7 @@ function App() {
   }, [settings.allowRepeat, currentPrize]);
 
   const resetLottery = () => {
+    console.log('🚀 App: resetLottery called');
     setState('setup');
     setWinners([]);
     setCurrentPrize(null);
@@ -96,6 +97,7 @@ function App() {
   };
 
   const backToOverview = () => {
+    console.log('🚀 App: backToOverview called');
     setState('overview');
     setCurrentPrize(null);
     setWinners([]);
