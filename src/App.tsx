@@ -1,15 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Sparkles, Settings as SettingsIcon } from 'lucide-react';
 import { PrizeManager } from './components/PrizeManager';
 import { ParticipantManager } from './components/ParticipantManager';
 import { LotterySettings } from './components/LotterySettings';
 import { LotteryOverview } from './components/LotteryOverview';
-import { LotteryWheel } from './components/LotteryWheel';
-import { LotteryResults } from './components/LotteryResults';
-import { MagicianAnimation } from './components/MagicianAnimation';
-import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig } from './types/lottery';
+import { LotteryAnimation } from './components/LotteryAnimation';
+import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, AnimationState } from './types/lottery';
 
-type AppState = 'setup' | 'overview' | 'drawing' | 'results';
+type AppState = 'setup' | 'overview' | 'drawing';
 
 function App() {
   const [state, setState] = useState<AppState>('setup');
@@ -26,8 +24,11 @@ function App() {
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
   const [winners, setWinners] = useState<Participant[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [isRealDrawing, setIsRealDrawing] = useState(false); // 實際抽獎狀態
+  const [currentAnimationPhase, setCurrentAnimationPhase] = useState<AnimationState>('idle');
   const [allResults, setAllResults] = useState<{ prize: Prize; winners: Participant[] }[]>([]);
+
+  const [effectiveParticipantsForDraw, setEffectiveParticipantsForDraw] = useState<Participant[]>([]);
+
 
   const completeSettings = () => {
     if (participants.length === 0) {
@@ -43,8 +44,8 @@ function App() {
 
   const startPrizeDraw = (prize: Prize) => {
     console.log('🎯 Starting prize draw for:', prize.name);
-    const availableParticipants = settings.allowRepeat 
-      ? participants 
+    const availableParticipants = settings.allowRepeat
+      ? participants
       : participants.filter(p => !p.isSelected);
 
     if (availableParticipants.length < prize.drawCount) {
@@ -53,23 +54,21 @@ function App() {
     }
 
     setCurrentPrize(prize);
+    setEffectiveParticipantsForDraw(availableParticipants);
     setState('drawing');
-    console.log('🎯 Setting isDrawing to true, isRealDrawing to false');
-    setIsDrawing(true); // 開始顯示動畫和播放音樂
-    setIsRealDrawing(false); // 但還沒開始實際抽獎
+    setIsDrawing(true);
+    setCurrentAnimationPhase('preparing');
   };
 
-  // 音樂播放完成後開始實際抽獎
-  const handleMusicComplete = () => {
-    console.log('🎯 handleMusicComplete called - setting isRealDrawing to true');
-    setIsRealDrawing(true);
-  };
+  const handleAnimationPhaseChange = useCallback((phase: AnimationState) => {
+    setCurrentAnimationPhase(phase);
+  }, []);
 
-  const handleDrawComplete = (selectedWinners: Participant[]) => {
+  const handleAnimationComplete = useCallback((selectedWinners: Participant[]) => {
     setWinners(selectedWinners);
     setIsDrawing(false);
-    setIsRealDrawing(false);
-    
+    setCurrentAnimationPhase('idle');
+
     if (!settings.allowRepeat) {
       setParticipants(prev => prev.map(p => ({
         ...p,
@@ -77,27 +76,30 @@ function App() {
       })));
     }
 
+    setEffectiveParticipantsForDraw([]);
+
     if (currentPrize) {
       const newResult = { prize: currentPrize, winners: selectedWinners };
       setAllResults(prev => [...prev, newResult]);
     }
-
-    setState('results');
-  };
+  }, [settings.allowRepeat, currentPrize]);
 
   const resetLottery = () => {
     setState('setup');
     setWinners([]);
     setCurrentPrize(null);
     setIsDrawing(false);
+    setCurrentAnimationPhase('idle');
     setAllResults([]);
     setParticipants(prev => prev.map(p => ({ ...p, isSelected: false })));
+    setEffectiveParticipantsForDraw([]);
   };
 
   const backToOverview = () => {
     setState('overview');
     setCurrentPrize(null);
     setWinners([]);
+    setEffectiveParticipantsForDraw([]);
   };
 
   const backToSettings = () => {
@@ -115,9 +117,9 @@ function App() {
 
     const dataStr = JSON.stringify(config, null, 2);
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-    
+
     const exportFileDefaultName = `lottery-config-${new Date().toISOString().slice(0, 19).replace(/[:-]/g, '').replace('T', '-')}.json`;
-    
+
     const linkElement = document.createElement('a');
     linkElement.setAttribute('href', dataUri);
     linkElement.setAttribute('download', exportFileDefaultName);
@@ -126,15 +128,15 @@ function App() {
 
   const validateConfig = (config: unknown): config is LotteryConfig => {
     if (!config || typeof config !== 'object') return false;
-    
+
     const obj = config as Record<string, unknown>;
-    
+
     if (!obj.settings || typeof obj.settings !== 'object' || obj.settings === null) {
       return false;
     }
-    
+
     const settings = obj.settings as Record<string, unknown>;
-    
+
     return (
       typeof obj.version === 'string' &&
       typeof obj.exportDate === 'string' &&
@@ -142,11 +144,11 @@ function App() {
       Array.isArray(obj.participants) &&
       typeof settings.allowRepeat === 'boolean' &&
       typeof settings.title === 'string' &&
-      obj.prizes.every((prize: unknown) => 
+      obj.prizes.every((prize: unknown) =>
         prize && typeof prize === 'object' && 'id' in prize && 'name' in prize && 'drawCount' in prize &&
         typeof (prize as { drawCount: unknown }).drawCount === 'number'
       ) &&
-      obj.participants.every((participant: unknown) => 
+      obj.participants.every((participant: unknown) =>
         participant && typeof participant === 'object' && 'id' in participant && 'name' in participant
       )
     );
@@ -160,27 +162,22 @@ function App() {
     reader.onload = (e) => {
       try {
         const configData = JSON.parse(e.target?.result as string);
-        
+
         if (!validateConfig(configData)) {
           alert('⚠️ 匯入失敗：檔案格式不正確！');
           return;
         }
 
-        const confirmMessage = `確定要匯入設定嗎？這將會覆蓋目前的設定。\n\n匯入資料：\n- 獎項：${configData.prizes.length} 個\n- 參與者：${configData.participants.length} 人\n- 匯出時間：${new Date(configData.exportDate).toLocaleString()}`;
-        
-        if (window.confirm(confirmMessage)) {
           setPrizes(configData.prizes);
           setParticipants(configData.participants.map((p: Participant) => ({ ...p, isSelected: false })));
           setSettings(configData.settings);
           setAllResults([]);
           setState('setup');
-          alert('✅ 設定匯入成功！');
-        }
       } catch {
         alert('⚠️ 匯入失敗：無法解析檔案內容！');
       }
     };
-    
+
     reader.readAsText(file);
     event.target.value = '';
   };
@@ -206,8 +203,8 @@ function App() {
             </div>
 
             <div className="max-w-md mx-auto">
-              <LotterySettings 
-                settings={settings} 
+              <LotterySettings
+                settings={settings}
                 onSettingsChange={setSettings}
                 onExportConfig={exportConfig}
                 onImportConfig={importConfig}
@@ -238,40 +235,45 @@ function App() {
           />
         )}
 
-        {state === 'drawing' && (
-          <div className="space-y-8">
-            <div className="text-center">
-              <h2 className="text-3xl font-bold text-gray-800 mb-2">正在抽取</h2>
-              <div className="text-2xl text-orange-600 font-semibold">
-                {currentPrize?.name}（實際抽出 {currentPrize ? Math.min(
-                  currentPrize.drawCount,
-                  settings.allowRepeat ? participants.length : participants.filter(p => !p.isSelected).length
-                ) : 0} 人）
+        {state === 'drawing' && currentPrize && (
+          <div className="relative">
+            {/* Status indicator (only visible during non-idle animation phases) */}
+            {currentAnimationPhase !== 'idle' && (
+              <div className="text-center mb-8">
+                <h2 className="text-3xl font-bold text-gray-800 mb-2">正在抽取</h2>
+                <div className="text-2xl text-orange-600 font-semibold">
+                  {currentPrize.name}（抽出 {Math.min(
+                    currentPrize.drawCount,
+                    effectiveParticipantsForDraw.length
+                  )} 人）
+                </div>
+                <div className="text-lg text-gray-600 mt-2">
+                  當前階段: {
+                    currentAnimationPhase === 'preparing' ? '準備中' :
+                    currentAnimationPhase === 'activating' ? '魔法啟動' :
+                    // currentAnimationPhase === 'shuffling' ? '混合名單' : // <-- 這裡也要移除或調整顯示
+                    currentAnimationPhase === 'revealing' ? '揭曉結果' :
+                    currentAnimationPhase === 'celebrating' ? '慶祝中' :
+                    ''
+                  }
+                </div>
               </div>
-            </div>
+            )}
 
-            <LotteryWheel
-              participants={settings.allowRepeat ? participants : participants.filter(p => !p.isSelected)}
-              isDrawing={isRealDrawing}
-              onDrawComplete={handleDrawComplete}
-              currentPrize={currentPrize}
-              allowRepeat={settings.allowRepeat}
+            <LotteryAnimation
+              isVisible={isDrawing}
+              participants={effectiveParticipantsForDraw}
+              prize={currentPrize}
+              onComplete={handleAnimationComplete}
+              onPhaseChange={handleAnimationPhaseChange}
+              onBackToOverview={backToOverview}
+              onReset={resetLottery}
             />
           </div>
         )}
 
-        {state === 'results' && (
-          <LotteryResults
-            winners={winners}
-            prize={currentPrize}
-            onReset={resetLottery}
-            onBackToOverview={backToOverview}
-            allResults={allResults}
-          />
-        )}
       </main>
 
-      <MagicianAnimation isVisible={isDrawing} onMusicComplete={handleMusicComplete} />
     </div>
   );
 }

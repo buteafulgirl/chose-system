@@ -1,3 +1,140 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+  /* Main color scheme */
+  --primary-magic: #6366f1;
+  --secondary-gold: #f59e0b;
+  --accent-purple: #8b5cf6;
+  --celebration-green: #10b981;
+  
+  /* Dynamic gradients */
+  --bg-preparation: linear-gradient(45deg, #1e293b, #334155);
+  --bg-magic: linear-gradient(135deg, #312e81, #6366f1);
+  --bg-celebration: linear-gradient(45deg, #f59e0b, #f97316);
+}
+
+/* Animation curves */
+.ease-dramatic {
+  transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+.ease-smooth {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.ease-bounce {
+  transition-timing-function: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+/* Performance optimizations */
+.gpu-accelerated {
+  transform: translate3d(0, 0, 0);
+  will-change: transform, opacity;
+}
+
+/* Custom animations */
+@keyframes magicPulse {
+  0%, 100% { 
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% { 
+    transform: scale(1.1);
+    opacity: 1;
+  }
+}
+
+@keyframes spiralIn {
+  0% {
+    transform: rotate(0deg) scale(0);
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes goldExplosion {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+@keyframes confettiFall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+/* Utility classes */
+.animate-magic-pulse {
+  animation: magicPulse 2s ease-in-out infinite;
+}
+
+.animate-spiral-in {
+  animation: spiralIn 1s ease-out forwards;
+}
+
+.animate-gold-explosion {
+  animation: goldExplosion 1s ease-out forwards;
+}
+
+.animate-confetti-fall {
+  animation: confettiFall 3s linear infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite;
+}
+
+/* Responsive performance classes */
+@media (max-width: 768px) {
+  .mobile-simplified {
+    animation: none !important;
+    transform: none !important;
+  }
+  
+  .mobile-simplified * {
+    animation-duration: 0.5s !important;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
