@@ -6,11 +6,14 @@ interface RevelationPhaseProps {
   winners: Participant[];
   prize: Prize;
   onComplete: () => void;
+  onBackToOverview?: () => void;
+  onReset?: () => void;
 }
 
-export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete }) => {
+export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete, onBackToOverview, onReset }) => {
   const [revealedWinners, setRevealedWinners] = useState<Participant[]>([]);
   const [showExplosion, setShowExplosion] = useState(false);
+  const [showButtons, setShowButtons] = useState(false);
   const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
@@ -33,16 +36,17 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
       revealTimers.push(timer);
     });
     
-    // Call onComplete after all winners are revealed + 2 seconds
+    // Show buttons after all winners are revealed + 2 seconds, then call onComplete
     const totalRevealTime = winners.length === 0 ? 1000 : 1000 + (winners.length - 1) * 800;
-    const completeTimer = setTimeout(() => {
-      console.log('🎊 RevelationPhase: All winners revealed, calling onComplete');
+    const buttonTimer = setTimeout(() => {
+      console.log('🎊 RevelationPhase: All winners revealed, showing buttons');
+      setShowButtons(true);
       onCompleteRef.current();
     }, totalRevealTime + 2000);
     
     return () => {
       revealTimers.forEach(timer => clearTimeout(timer));
-      clearTimeout(completeTimer);
+      clearTimeout(buttonTimer);
     };
   }, [winners]);
 
@@ -81,7 +85,7 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
             <Trophy size={80} className="text-yellow-200 ml-6" />
           </div>
           <div className="text-5xl md:text-6xl lg:text-7xl text-yellow-100 font-bold">
-            🎊 恭喜得獎者 🎊
+            恭喜得獎者
           </div>
         </div>
 
@@ -111,6 +115,45 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
         {revealedWinners.length === 0 && showExplosion && (
           <div className="text-5xl md:text-6xl lg:text-7xl text-white font-bold animate-pulse">
             準備揭曉得獎者...
+          </div>
+        )}
+
+        {/* Navigation buttons - show after winners are revealed */}
+        {showButtons && (onBackToOverview || onReset) && (
+          <div className="mt-12 flex flex-col sm:flex-row gap-6 justify-center items-center" style={{animation: 'fadeIn 1s ease-out'}}>
+            {onBackToOverview && (
+              <button
+                onClick={() => {
+                  console.log('🔄 RevelationPhase: Back to Overview button clicked');
+                  onBackToOverview();
+                }}
+                className="px-8 py-4 bg-orange-500 text-white rounded-xl hover:bg-orange-600 transition-colors font-bold text-xl flex items-center gap-3 shadow-lg transform hover:scale-105"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m12 19-7-7 7-7"/>
+                  <path d="M19 12H5"/>
+                </svg>
+                回到抽獎總覽
+              </button>
+            )}
+            
+            {onReset && (
+              <button
+                onClick={() => {
+                  console.log('🔄 RevelationPhase: Reset button clicked');
+                  onReset();
+                }}
+                className="px-8 py-4 bg-gray-500 text-white rounded-xl hover:bg-gray-600 transition-colors font-bold text-xl flex items-center gap-3 shadow-lg transform hover:scale-105"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M12 1v6m0 6v6"/>
+                  <path d="m15.5 3.5-1.5 1.5m0 0L12.5 3.5M1 12h6m6 0h6"/>
+                  <path d="m20.5 20.5-1.5-1.5m0 0 1.5-1.5M3.5 20.5l1.5-1.5m0 0-1.5-1.5"/>
+                </svg>
+                重新設定
+              </button>
+            )}
           </div>
         )}
       </div>
@@ -148,6 +191,15 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
           }
         `
       }} />
+
+      {/* 固定在右下角的魔法師圖標 - 佔據螢幕20% */}
+      <div className="fixed bottom-4 right-4 z-60">
+        <img 
+          src="/aMI_magician.svg" 
+          alt="Magician"
+          className="w-[20vw] h-[20vh] object-contain drop-shadow-lg opacity-80"
+        />
+      </div>
     </div>
   );
 };

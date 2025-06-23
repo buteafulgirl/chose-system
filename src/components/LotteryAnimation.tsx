@@ -3,7 +3,6 @@ import { AnimationState, Participant, Prize } from '../types/lottery';
 import { PreparationPhase } from './animation/PreparationPhase';
 import { ActivationPhase } from './animation/ActivationPhase';
 import { RevelationPhase } from './animation/RevelationPhase';
-import { CelebrationPhase } from './animation/CelebrationPhase';
 
 interface LotteryAnimationProps {
   isVisible: boolean;
@@ -77,25 +76,22 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
           prize={prize}
           onComplete={() => {
             console.log('🎯 LotteryAnimation: Revealing phase complete, staying in revealing phase');
-            onComplete(winners);
+            // 不調用 onComplete(winners)，避免觸發 App 的 handleAnimationComplete
             // 停在RevelationPhase，不跳轉到celebrating
-          }} 
-        />
-      )}
-      
-      {currentPhase === 'celebrating' && (
-        <CelebrationPhase 
-          winners={winners}
-          prize={prize}
+          }}
           onBackToOverview={() => {
-            console.log('🎯 LotteryAnimation: onBackToOverview called');
+            console.log('🎯 LotteryAnimation: onBackToOverview called from RevelationPhase');
+            // 先處理中獎者數據，再切換狀態
+            onComplete(winners);
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
             console.log('🎯 About to call parent onBackToOverview:', onBackToOverview);
             onBackToOverview?.();
           }}
           onReset={() => {
-            console.log('🎯 LotteryAnimation: onReset called');
+            console.log('🎯 LotteryAnimation: onReset called from RevelationPhase');
+            // 先處理中獎者數據，再切換狀態
+            onComplete(winners);
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
             console.log('🎯 About to call parent onReset:', onReset);

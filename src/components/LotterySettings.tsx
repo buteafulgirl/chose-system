@@ -38,7 +38,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
           />
         </div>
         
-        <div>
+        {/* <div>
           <label className="flex items-center space-x-3">
             <input
               type="checkbox"
@@ -51,7 +51,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
           <p className="text-sm text-gray-500 ml-8 mt-1">
             勾選後，同一人可以在多次抽獎中重複中獎
           </p>
-        </div>
+        </div> */}
 
         {(onExportConfig || onImportConfig) && (
           <div className="border-t pt-4 mt-4">

@@ -84,6 +84,23 @@ function App() {
     }
   }, [settings.allowRepeat, currentPrize]);
 
+  // 專門處理按鈕點擊時的數據保存，不影響 isDrawing 狀態
+  const handleWinnerDataSave = useCallback((selectedWinners: Participant[]) => {
+    setWinners(selectedWinners);
+
+    if (!settings.allowRepeat) {
+      setParticipants(prev => prev.map(p => ({
+        ...p,
+        isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
+      })));
+    }
+
+    if (currentPrize) {
+      const newResult = { prize: currentPrize, winners: selectedWinners };
+      setAllResults(prev => [...prev, newResult]);
+    }
+  }, [settings.allowRepeat, currentPrize]);
+
   const resetLottery = () => {
     console.log('🚀 App: resetLottery called');
     setState('setup');
@@ -101,6 +118,8 @@ function App() {
     setState('overview');
     setCurrentPrize(null);
     setWinners([]);
+    setIsDrawing(false);
+    setCurrentAnimationPhase('idle');
     setEffectiveParticipantsForDraw([]);
   };
 
@@ -265,7 +284,7 @@ function App() {
               isVisible={isDrawing}
               participants={effectiveParticipantsForDraw}
               prize={currentPrize}
-              onComplete={handleAnimationComplete}
+              onComplete={handleWinnerDataSave}
               onPhaseChange={handleAnimationPhaseChange}
               onBackToOverview={backToOverview}
               onReset={resetLottery}
@@ -274,6 +293,15 @@ function App() {
         )}
 
       </main>
+
+      {/* 固定在右下角的魔法師圖標 - 佔據螢幕20% */}
+      <div className="fixed bottom-4 right-4 z-40">
+        <img 
+          src="/aMI_magician.svg" 
+          alt="Magician"
+          className="w-[20vw] h-[20vh] object-contain drop-shadow-lg opacity-80"
+        />
+      </div>
 
     </div>
   );
