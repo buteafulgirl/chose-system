@@ -22,7 +22,7 @@ function App() {
     title: '旭聯科技 ATD25 分享會'
   });
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
-  const [winners, setWinners] = useState<Participant[]>([]);
+  const [, setWinners] = useState<Participant[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [currentAnimationPhase, setCurrentAnimationPhase] = useState<AnimationState>('idle');
   const [allResults, setAllResults] = useState<{ prize: Prize; winners: Participant[] }[]>([]);
@@ -253,7 +253,6 @@ function App() {
                   當前階段: {
                     currentAnimationPhase === 'preparing' ? '準備中' :
                     currentAnimationPhase === 'activating' ? '魔法啟動' :
-                    // currentAnimationPhase === 'shuffling' ? '混合名單' : // <-- 這裡也要移除或調整顯示
                     currentAnimationPhase === 'revealing' ? '揭曉結果' :
                     currentAnimationPhase === 'celebrating' ? '慶祝中' :
                     ''

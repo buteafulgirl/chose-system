@@ -36,16 +36,3 @@ export type AnimationState =
   | 'revealing'      // 結果揭曉
   | 'celebrating'    // 慶祝展示
 
-export interface AnimationContext {
-  currentState: AnimationState;
-  progress: number;        // 當前階段進度 0-1
-  participants: Participant[];
-  winners: Participant[];
-  prizeInfo: Prize;
-}
-
-export enum PerformanceLevel {
-  LOW = 'low',        // 基本動畫，無粒子效果
-  MEDIUM = 'medium',  // 標準動畫，簡化粒子
-  HIGH = 'high'       // 完整特效體驗
-}

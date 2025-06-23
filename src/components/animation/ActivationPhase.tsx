@@ -18,12 +18,11 @@ export const ActivationPhase: React.FC<ActivationPhaseProps> = ({ onComplete }) 
 
   useEffect(() => {
     // 定時器 ID，用於清理
-    let magicCircleTimer: number | undefined;
+    const magicCircleTimer = setTimeout(() => setShowMagicCircle(true), 100);
     let fallbackTimer: number | undefined;
     let audio: HTMLAudioElement | null = null; // 在這個作用域內聲明 audio 變量
 
-    // 步驟 1: 顯示魔法圈
-    magicCircleTimer = setTimeout(() => setShowMagicCircle(true), 100);
+    // 步驟 1: 顯示魔法圈已在上面設定
 
     // 步驟 2: 初始化並播放音樂
     audio = new Audio('/animation-sound.mp3');

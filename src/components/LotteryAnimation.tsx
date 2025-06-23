@@ -76,9 +76,9 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
           winners={winners}
           prize={prize}
           onComplete={() => {
-            console.log('🎯 LotteryAnimation: Revealing phase complete, transitioning to celebrating');
+            console.log('🎯 LotteryAnimation: Revealing phase complete, staying in revealing phase');
             onComplete(winners);
-            handlePhaseComplete('celebrating');
+            // 停在RevelationPhase，不跳轉到celebrating
           }} 
         />
       )}
