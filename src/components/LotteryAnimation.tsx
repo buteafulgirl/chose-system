@@ -74,7 +74,10 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
         <RevelationPhase 
           winners={winners}
           prize={prize}
-          onComplete={() => handlePhaseComplete('celebrating')} 
+          onComplete={() => {
+            onComplete(winners);
+            handlePhaseComplete('celebrating');
+          }} 
         />
       )}
       
@@ -85,13 +88,11 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
           onBackToOverview={() => {
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
-            onComplete(winners);
             onBackToOverview?.();
           }}
           onReset={() => {
             setCurrentPhase('idle');
             onPhaseChangeRef.current?.('idle');
-            onComplete(winners);
             onReset?.();
           }}
         />
