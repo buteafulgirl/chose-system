@@ -12,6 +12,8 @@ interface LotteryAnimationProps {
   onPhaseChange?: (phase: AnimationState) => void;
   onBackToOverview?: () => void;
   onReset?: () => void;
+  onRedraw?: (newWinners: Participant[]) => void;
+  availableParticipants?: Participant[];
 }
 
 export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
@@ -21,7 +23,9 @@ export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
   onComplete,
   onPhaseChange,
   onBackToOverview,
-  onReset
+  onReset,
+  onRedraw,
+  availableParticipants = []
 }) => {
   const [currentPhase, setCurrentPhase] = useState<AnimationState>('idle');
   const [winners, setWinners] = useState<Participant[]>([]);
@@ -33,31 +37,32 @@ export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
   }, [onPhaseChange]);
 
   useEffect(() => {
-    if (isVisible && participants.length > 0) {
-      // Select winners randomly
+    if (isVisible && participants.length > 0 && currentPhase === 'idle') {
+      // 正常抽獎模式 - 只在初始狀態下進行
       const shuffled = [...participants].sort(() => Math.random() - 0.5);
-      const selectedWinners = shuffled.slice(0, prize.drawCount);
-      setWinners(selectedWinners);
+      const finalWinners = shuffled.slice(0, prize.drawCount);
+      
+      setWinners(finalWinners);
       
       // Start with preparation phase
       setCurrentPhase('preparing');
       onPhaseChangeRef.current?.('preparing');
-    } else {
+    } else if (!isVisible) {
       // Reset when not visible
       setCurrentPhase('idle');
       setWinners([]);
     }
-  }, [isVisible, participants, prize]);
+  }, [isVisible, participants, prize, currentPhase]);
+
+  const handlePhaseComplete = (nextPhase: AnimationState) => {
+    console.log(`--- LotteryAnimation: Transitioning to phase: ${nextPhase}`);
+    setCurrentPhase(nextPhase);
+    onPhaseChangeRef.current?.(nextPhase);
+  };
 
   if (!isVisible) {
     return null;
   }
-
-const handlePhaseComplete = (nextPhase: AnimationState) => {
-  console.log(`--- LotteryAnimation: Transitioning to phase: ${nextPhase}`);
-  setCurrentPhase(nextPhase);
-  onPhaseChangeRef.current?.(nextPhase);
-};
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -72,6 +77,7 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
       
       {currentPhase === 'revealing' && (
         <RevelationPhase 
+          key={`revelation-${prize.id}-${winners.map(w => w.id).sort().join('-')}`}
           winners={winners}
           prize={prize}
           onComplete={() => {
@@ -97,6 +103,13 @@ const handlePhaseComplete = (nextPhase: AnimationState) => {
             console.log('🎯 About to call parent onReset:', onReset);
             onReset?.();
           }}
+          onRedraw={(newWinners) => {
+            // 更新當前的中獎者
+            setWinners(newWinners);
+            // 通知父組件
+            onRedraw?.(newWinners);
+          }}
+          availableParticipants={availableParticipants}
         />
       )}
     </div>

@@ -8,6 +8,7 @@ export interface Participant {
   id: string;
   name: string;
   isSelected?: boolean;
+  isAbsent?: boolean;
 }
 
 export interface LotterySettings {
@@ -18,6 +19,13 @@ export interface LotterySettings {
 export interface LotteryResult {
   winners: Participant[];
   prize: Prize;
+}
+
+export interface RedrawRequest {
+  absentWinners: Participant[];
+  presentWinners: Participant[];
+  prize: Prize;
+  redrawCount: number;
 }
 
 export interface LotteryConfig {

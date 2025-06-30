@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Trophy } from 'lucide-react';
+import { Trophy, UserX, RefreshCw, UserCheck } from 'lucide-react';
 import { Participant, Prize } from '../../types/lottery';
 
 interface RevelationPhaseProps {
@@ -8,48 +8,119 @@ interface RevelationPhaseProps {
   onComplete: () => void;
   onBackToOverview?: () => void;
   onReset?: () => void;
+  onRedraw?: (newWinners: Participant[]) => void;
+  availableParticipants?: Participant[];
 }
 
-export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete, onBackToOverview, onReset }) => {
+export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete, onBackToOverview, onReset, onRedraw, availableParticipants = [] }) => {
   const [revealedWinners, setRevealedWinners] = useState<Participant[]>([]);
   const [showExplosion, setShowExplosion] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [absentWinners, setAbsentWinners] = useState<Set<string>>(new Set());
+  const hasInitializedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
+  const winnersStringRef = useRef<string>('');
 
   useEffect(() => {
     onCompleteRef.current = onComplete;
   }, [onComplete]);
 
   useEffect(() => {
-    console.log('🎊 RevelationPhase: Starting revelation animation');
-    // Show explosion effect immediately
-    setShowExplosion(true);
+    const currentWinnersString = JSON.stringify(winners.map(w => w.id).sort());
     
-    // Reveal winners one by one
-    const revealTimers: number[] = [];
-    
-    winners.forEach((winner, i) => {
-      const delay = i === 0 ? 1000 : 1000 + (i * 800);
-      const timer = setTimeout(() => {
-        setRevealedWinners(prev => [...prev, winner]);
-      }, delay);
-      revealTimers.push(timer);
-    });
-    
-    // Show buttons after all winners are revealed + 2 seconds, then call onComplete
-    const totalRevealTime = winners.length === 0 ? 1000 : 1000 + (winners.length - 1) * 800;
-    const buttonTimer = setTimeout(() => {
-      console.log('🎊 RevelationPhase: All winners revealed, showing buttons');
-      setShowButtons(true);
-      onCompleteRef.current();
-    }, totalRevealTime + 2000);
-    
-    return () => {
-      revealTimers.forEach(timer => clearTimeout(timer));
-      clearTimeout(buttonTimer);
-    };
-  }, [winners]);
+    if (!hasInitializedRef.current && winners.length > 0) {
+      console.log('🎊 RevelationPhase: Starting revelation animation for winners:', winners.map(w => w.name));
+      hasInitializedRef.current = true;
+      winnersStringRef.current = currentWinnersString;
+      
+      // Show explosion effect immediately
+      setShowExplosion(true);
+      
+      // Initialize revealed winners immediately to avoid layout shift
+      setRevealedWinners(winners);
+      
+      // Show buttons after 1 second
+      const buttonTimer = setTimeout(() => {
+        console.log('🎊 RevelationPhase: Showing buttons');
+        setShowButtons(true);
+        onCompleteRef.current();
+      }, 1000);
+      
+      return () => {
+        clearTimeout(buttonTimer);
+      };
+    } else if (hasInitializedRef.current && winners.length > 0 && winnersStringRef.current === currentWinnersString) {
+      console.log('🎊 RevelationPhase: Same winners detected, ensuring buttons are shown');
+      // Even if it's the same winners, ensure buttons are shown if they haven't been shown yet
+      if (!showButtons) {
+        const buttonTimer = setTimeout(() => {
+          console.log('🎊 RevelationPhase: Showing buttons (delayed for same winners)');
+          setShowButtons(true);
+          onCompleteRef.current();
+        }, 100);
+        
+        return () => {
+          clearTimeout(buttonTimer);
+        };
+      }
+    } else if (hasInitializedRef.current && winnersStringRef.current !== currentWinnersString) {
+      console.log('🎊 RevelationPhase: Different winners detected, but already initialized - this should not happen in normal flow');
+    }
+  }, [winners, showButtons]);
 
+  const toggleAbsentStatus = (participantId: string) => {
+    setAbsentWinners(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(participantId)) {
+        newSet.delete(participantId);
+      } else {
+        newSet.add(participantId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleRedraw = () => {
+    if (absentWinners.size === 0) {
+      alert('請先標記不在場的中獎者！');
+      return;
+    }
+
+    // 直接在當前頁面重新抽獎
+    const presentWinners = revealedWinners.filter(w => !absentWinners.has(w.id));
+    
+    // 從可用參與者中排除**所有當前中獎者**（包括在場和不在場的），然後隨機選取替代者
+    const allCurrentWinnerIds = new Set(revealedWinners.map(w => w.id));
+    const filteredParticipants = availableParticipants.filter(p => !allCurrentWinnerIds.has(p.id));
+
+    console.log('🔄 Redraw Debug:', {
+      absentWinnersCount: absentWinners.size,
+      presentWinnersCount: presentWinners.length,
+      allWinnersCount: revealedWinners.length,
+      availableParticipantsCount: availableParticipants.length,
+      filteredParticipantsCount: filteredParticipants.length
+    });
+
+    if (filteredParticipants.length < absentWinners.size) {
+      alert(`可重新抽獎人數不足！需要 ${absentWinners.size} 人，目前可抽獎人數：${filteredParticipants.length}`);
+      return;
+    }
+    
+    const shuffled = [...filteredParticipants].sort(() => Math.random() - 0.5);
+    const newWinners = shuffled.slice(0, absentWinners.size);
+    
+    console.log('🎯 New winners selected:', newWinners.map(w => w.name));
+    
+    // 合併在場的中獎者和新抽取的中獎者
+    const finalWinners = [...presentWinners, ...newWinners];
+    
+    // 直接更新中獎者
+    setRevealedWinners(finalWinners);
+    setAbsentWinners(new Set());
+    
+    // 通知父組件更新狀態
+    onRedraw?.(finalWinners);
+  };
 
   return (
     <div className="fixed inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center overflow-hidden">
@@ -92,39 +163,86 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
         {/* 得獎者卡片 - 可滾動區域 */}
         <div className="flex-1 overflow-y-auto px-6 pb-6">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto p-4">
-            {revealedWinners.map((winner, index) => (
-              <div
-                key={winner.id}
-                className="bg-white rounded-2xl p-6 shadow-2xl transform transition-all duration-700 hover:scale-105 m-2"
-                style={{
-                  animation: `winnerReveal 1s ease-out forwards`,
-                  animationDelay: `${index * 0.3}s`,
-                  opacity: 0,
-                  transform: 'scale(0.3) translateY(100px)'
-                }}
-              >
-                {/* 得獎者名字 - 調整字體大小 */}
-                <div className="text-4xl md:text-5xl lg:text-6xl font-black text-gray-800">
-                  {winner.name}
+            {revealedWinners.map((winner, index) => {
+              const isAbsent = absentWinners.has(winner.id);
+              return (
+                <div
+                  key={winner.id}
+                  className={`bg-white rounded-2xl p-6 shadow-2xl transform transition-all duration-700 hover:scale-105 m-2 relative ${
+                    isAbsent ? 'opacity-60 bg-gray-100' : ''
+                  }`}
+                  style={{
+                    animation: `winnerReveal 1s ease-out forwards`,
+                    animationDelay: `${index * 0.3}s`,
+                    opacity: 0,
+                    transform: 'scale(0.3) translateY(100px)'
+                  }}
+                >
+                  {/* 不在場狀態切換按鈕 */}
+                  {showButtons && (
+                    <button
+                      onClick={() => toggleAbsentStatus(winner.id)}
+                      className={`absolute top-2 right-2 p-2 rounded-full transition-all duration-300 ${
+                        isAbsent 
+                          ? 'bg-red-500 text-white hover:bg-red-600' 
+                          : 'bg-green-500 text-white hover:bg-green-600'
+                      }`}
+                      title={isAbsent ? '標記為在場' : '標記為不在場'}
+                    >
+                      {isAbsent ? <UserX size={20} /> : <UserCheck size={20} />}
+                    </button>
+                  )}
+
+                  {/* 得獎者名字 - 調整字體大小 */}
+                  <div className={`text-4xl md:text-5xl lg:text-6xl font-black ${
+                    isAbsent ? 'text-gray-500' : 'text-gray-800'
+                  }`}>
+                    {winner.name}
+                  </div>
+
+                  {/* 不在場標記 */}
+                  {isAbsent && (
+                    <div className="absolute bottom-2 left-2 bg-red-500 text-white px-2 py-1 rounded-full text-sm font-bold">
+                      不在場
+                    </div>
+                  )}
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           
-          {/* 如果沒有得獎者 */}
-          {revealedWinners.length === 0 && showExplosion && (
-            <div className="text-center">
-              <div className="text-4xl md:text-5xl lg:text-6xl text-white font-bold animate-pulse">
-                準備揭曉得獎者...
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Navigation buttons - 固定在底部 */}
-        {showButtons && (onBackToOverview || onReset) && (
+        {showButtons && (
           <div className="flex-shrink-0 px-6 pb-8">
+            {/* 統計信息 */}
+            {absentWinners.size > 0 && (
+              <div className="text-center mb-4" style={{animation: 'fadeIn 1s ease-out'}}>
+                <div className="bg-yellow-100 border border-yellow-400 rounded-xl p-4 inline-block">
+                  <div className="text-lg font-bold text-yellow-800">
+                    已標記 {absentWinners.size} 位不在場中獎者
+                  </div>
+                  <div className="text-sm text-yellow-700">
+                    點擊「重新抽獎」來重新抽取這些位置
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center" style={{animation: 'fadeIn 1s ease-out'}}>
+              {/* 重新抽獎按鈕 */}
+              {onRedraw && (
+                <button
+                  onClick={handleRedraw}
+                  disabled={absentWinners.size === 0}
+                  className="px-6 py-3 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors font-bold text-lg flex items-center gap-2 shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                >
+                  <RefreshCw size={20} />
+                  重新抽獎 ({absentWinners.size} 位)
+                </button>
+              )}
+
               {onBackToOverview && (
                 <button
                   onClick={() => {

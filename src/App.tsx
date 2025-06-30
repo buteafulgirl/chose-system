@@ -28,6 +28,7 @@ function App() {
   const [allResults, setAllResults] = useState<{ prize: Prize; winners: Participant[] }[]>([]);
 
   const [effectiveParticipantsForDraw, setEffectiveParticipantsForDraw] = useState<Participant[]>([]);
+  const [availableForRedraw, setAvailableForRedraw] = useState<Participant[]>([]);
 
 
   const completeSettings = () => {
@@ -55,6 +56,7 @@ function App() {
 
     setCurrentPrize(prize);
     setEffectiveParticipantsForDraw(availableParticipants);
+    setAvailableForRedraw(availableParticipants); // 設置可用於重新抽獎的參與者
     setState('drawing');
     setIsDrawing(true);
     setCurrentAnimationPhase('preparing');
@@ -64,31 +66,13 @@ function App() {
     setCurrentAnimationPhase(phase);
   }, []);
 
-  const handleAnimationComplete = useCallback((selectedWinners: Participant[]) => {
-    setWinners(selectedWinners);
-    setIsDrawing(false);
-    setCurrentAnimationPhase('idle');
-
-    if (!settings.allowRepeat) {
-      setParticipants(prev => prev.map(p => ({
-        ...p,
-        isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
-      })));
-    }
-
-    setEffectiveParticipantsForDraw([]);
-
-    if (currentPrize) {
-      const newResult = { prize: currentPrize, winners: selectedWinners };
-      setAllResults(prev => [...prev, newResult]);
-    }
-  }, [settings.allowRepeat, currentPrize]);
 
   // 專門處理按鈕點擊時的數據保存，不影響 isDrawing 狀態
   const handleWinnerDataSave = useCallback((selectedWinners: Participant[]) => {
     setWinners(selectedWinners);
 
     if (!settings.allowRepeat) {
+      // 標記所有中獎者
       setParticipants(prev => prev.map(p => ({
         ...p,
         isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
@@ -96,10 +80,28 @@ function App() {
     }
 
     if (currentPrize) {
-      const newResult = { prize: currentPrize, winners: selectedWinners };
-      setAllResults(prev => [...prev, newResult]);
+      // 檢查是否已經有這個獎項的結果（重新抽獎情況）
+      const existingResultIndex = allResults.findIndex(result => result.prize.id === currentPrize.id);
+      if (existingResultIndex >= 0) {
+        // 更新現有結果
+        setAllResults(prev => prev.map((result, index) => 
+          index === existingResultIndex 
+            ? { ...result, winners: selectedWinners }
+            : result
+        ));
+      } else {
+        // 添加新結果
+        const newResult = { prize: currentPrize, winners: selectedWinners };
+        setAllResults(prev => [...prev, newResult]);
+      }
     }
-  }, [settings.allowRepeat, currentPrize]);
+  }, [settings.allowRepeat, currentPrize, allResults]);
+
+  const handleRedraw = useCallback((newWinners: Participant[]) => {
+    console.log('🎯 App: Handling redraw with new winners:', newWinners);
+    // 直接更新中獎者狀態，不需要重新開始動畫
+    handleWinnerDataSave(newWinners);
+  }, [handleWinnerDataSave]);
 
   const resetLottery = () => {
     console.log('🚀 App: resetLottery called');
@@ -111,6 +113,7 @@ function App() {
     setAllResults([]);
     setParticipants(prev => prev.map(p => ({ ...p, isSelected: false })));
     setEffectiveParticipantsForDraw([]);
+    setAvailableForRedraw([]);
   };
 
   const backToOverview = () => {
@@ -121,6 +124,7 @@ function App() {
     setIsDrawing(false);
     setCurrentAnimationPhase('idle');
     setEffectiveParticipantsForDraw([]);
+    setAvailableForRedraw([]);
   };
 
   const backToSettings = () => {
@@ -288,6 +292,8 @@ function App() {
               onPhaseChange={handleAnimationPhaseChange}
               onBackToOverview={backToOverview}
               onReset={resetLottery}
+              onRedraw={handleRedraw}
+              availableParticipants={availableForRedraw}
             />
           </div>
         )}
