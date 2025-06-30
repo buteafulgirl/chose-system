@@ -208,8 +208,8 @@ function App() {
     event.target.value = '';
   };
 
-  // Excel 參與者名單匯入
-  const importExcelParticipants = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // Excel 完整設定匯入（獎項 + 參與者）
+  const importExcelConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -218,22 +218,58 @@ function App() {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
         
-        // 將 Excel 數據轉換為 JSON
-        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        let importedPrizes: Prize[] = [];
+        let importedParticipants: Participant[] = [];
         
-        // 過濾掉空行和標題行，提取參與者姓名
-        const newParticipants: Participant[] = [];
+        // 嘗試讀取獎項設定工作表
+        if (workbook.SheetNames.includes('獎項設定')) {
+          const prizeSheet = workbook.Sheets['獎項設定'];
+          const prizeJsonData = XLSX.utils.sheet_to_json(prizeSheet, { header: 1 }) as (string | number)[][];
+          
+          for (let i = 1; i < prizeJsonData.length; i++) { // 從第二行開始（跳過標題行）
+            const row = prizeJsonData[i];
+            if (row && row[0] && row[1] && typeof row[0] === 'string' && typeof row[1] === 'number') {
+              const name = row[0].trim();
+              const drawCount = Math.max(1, Math.floor(row[1])); // 確保至少為1且為整數
+              
+              if (name) {
+                importedPrizes.push({
+                  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                  name: name,
+                  drawCount: drawCount
+                });
+              }
+            }
+          }
+        }
         
-        for (let i = 1; i < jsonData.length; i++) { // 從第二行開始（跳過標題行）
-          const row = jsonData[i];
-          if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
-            const name = row[0].trim();
-            // 避免重複添加
-            if (!participants.some(p => p.name === name)) {
-              newParticipants.push({
+        // 嘗試讀取參與者名單工作表
+        if (workbook.SheetNames.includes('參與者名單')) {
+          const participantSheet = workbook.Sheets['參與者名單'];
+          const participantJsonData = XLSX.utils.sheet_to_json(participantSheet, { header: 1 }) as string[][];
+          
+          for (let i = 1; i < participantJsonData.length; i++) { // 從第二行開始（跳過標題行）
+            const row = participantJsonData[i];
+            if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
+              const name = row[0].trim();
+              importedParticipants.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                name: name,
+                isSelected: false
+              });
+            }
+          }
+        } else {
+          // 如果沒有專門的參與者名單工作表，嘗試從第一個工作表讀取
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as string[][];
+          
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
+              const name = row[0].trim();
+              importedParticipants.push({
                 id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                 name: name,
                 isSelected: false
@@ -242,14 +278,33 @@ function App() {
           }
         }
         
-        if (newParticipants.length === 0) {
-          alert('⚠️ 匯入失敗：未找到有效的參與者姓名！\n請確保 Excel 檔案第一欄包含參與者姓名。');
+        // 檢查匯入結果
+        if (importedPrizes.length === 0 && importedParticipants.length === 0) {
+          alert('⚠️ 匯入失敗：未找到有效的獎項或參與者資料！\n請確保 Excel 檔案包含正確的工作表和資料格式。');
           return;
         }
         
-        // 添加新參與者到現有列表
-        setParticipants(prev => [...prev, ...newParticipants]);
-        alert(`✅ 成功匯入 ${newParticipants.length} 位參與者！`);
+        // 更新應用狀態
+        if (importedPrizes.length > 0) {
+          setPrizes(importedPrizes);
+        }
+        if (importedParticipants.length > 0) {
+          setParticipants(importedParticipants);
+        }
+        
+        // 重置其他狀態
+        setAllResults([]);
+        setState('setup');
+        
+        const successMessage = [];
+        if (importedPrizes.length > 0) {
+          successMessage.push(`${importedPrizes.length} 個獎項`);
+        }
+        if (importedParticipants.length > 0) {
+          successMessage.push(`${importedParticipants.length} 位參與者`);
+        }
+        
+        alert(`✅ 成功匯入：${successMessage.join('、')}！`);
         
       } catch (error) {
         console.error('Excel import error:', error);
@@ -287,7 +342,7 @@ function App() {
                 onSettingsChange={setSettings}
                 onExportConfig={exportConfig}
                 onImportConfig={importConfig}
-                onExcelImport={importExcelParticipants}
+                onExcelImport={importExcelConfig}
               />
             </div>
 

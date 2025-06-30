@@ -26,22 +26,34 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
       onDownloadTemplate();
     } else {
       // 預設模板下載邏輯
-      const templateData = [
+      const wb = XLSX.utils.book_new();
+      
+      // 獎項設定工作表
+      const prizeData = [
+        { '獎項名稱': '特等獎', '中獎人數': 1 },
+        { '獎項名稱': '一等獎', '中獎人數': 2 },
+        { '獎項名稱': '二等獎', '中獎人數': 6 }
+      ];
+      const prizeSheet = XLSX.utils.json_to_sheet(prizeData);
+      prizeSheet['!cols'] = [
+        { width: 20 }, // 獎項名稱欄位
+        { width: 15 }  // 中獎人數欄位
+      ];
+      XLSX.utils.book_append_sheet(wb, prizeSheet, '獎項設定');
+      
+      // 參與者名單工作表
+      const participantData = [
         { '姓名': '張三' },
         { '姓名': '李四' },
         { '姓名': '王五' }
       ];
-      
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '參與者名單');
-      
-      // 設定欄位寬度
-      ws['!cols'] = [
+      const participantSheet = XLSX.utils.json_to_sheet(participantData);
+      participantSheet['!cols'] = [
         { width: 20 } // 姓名欄位
       ];
+      XLSX.utils.book_append_sheet(wb, participantSheet, '參與者名單');
       
-      XLSX.writeFile(wb, '參與者名單模板.xlsx');
+      XLSX.writeFile(wb, '抽獎系統模板.xlsx');
     }
   };
   return (
@@ -123,7 +135,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
             {/* Excel 匯入功能 */}
             {(onExcelImport || onDownloadTemplate) && (
               <div>
-                <h5 className="text-md font-medium text-gray-600 mb-2">Excel 參與者名單</h5>
+                <h5 className="text-md font-medium text-gray-600 mb-2">Excel 完整設定</h5>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <button
                     onClick={handleDownloadTemplate}
@@ -136,7 +148,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
                   {onExcelImport && (
                     <label className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
                       <FileSpreadsheet size={16} />
-                      匯入Excel名單
+                      匯入Excel設定
                       <input
                         type="file"
                         accept=".xlsx,.xls"
@@ -147,7 +159,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
                   )}
                 </div>
                 <p className="text-sm text-gray-500 mt-2">
-                  先下載Excel模板，填入參與者姓名後匯入。支援 .xlsx 和 .xls 格式
+                  Excel模板包含「獎項設定」和「參與者名單」兩個工作表。支援 .xlsx 和 .xls 格式
                 </p>
               </div>
             )}
