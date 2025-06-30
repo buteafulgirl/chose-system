@@ -193,10 +193,10 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
                     </button>
                   )}
 
-                  {/* 得獎者名字 - 調整字體大小 */}
-                  <div className={`text-4xl md:text-5xl lg:text-6xl font-black ${
+                  {/* 得獎者名字 - 修復長名字溢出問題 */}
+                  <div className={`text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black ${
                     isAbsent ? 'text-gray-500' : 'text-gray-800'
-                  }`}>
+                  } break-words overflow-wrap-anywhere text-center leading-tight px-2`}>
                     {winner.name}
                   </div>
 
