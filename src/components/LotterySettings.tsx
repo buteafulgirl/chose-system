@@ -27,9 +27,9 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
     } else {
       // 預設模板下載邏輯
       const templateData = [
-        { '姓名': '張三', '備註': '範例參與者' },
-        { '姓名': '李四', '備註': '範例參與者' },
-        { '姓名': '王五', '備註': '範例參與者' }
+        { '姓名': '張三' },
+        { '姓名': '李四' },
+        { '姓名': '王五' }
       ];
       
       const ws = XLSX.utils.json_to_sheet(templateData);
@@ -38,8 +38,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
       
       // 設定欄位寬度
       ws['!cols'] = [
-        { width: 15 }, // 姓名欄位
-        { width: 20 }  // 備註欄位
+        { width: 20 } // 姓名欄位
       ];
       
       XLSX.writeFile(wb, '參與者名單模板.xlsx');
