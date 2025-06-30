@@ -1,20 +1,50 @@
 import React from 'react';
-import { Settings, Download, Upload } from 'lucide-react';
+import { Settings, Download, Upload, FileSpreadsheet, FileDown } from 'lucide-react';
 import { LotterySettings as LotterySettingsType } from '../types/lottery';
+import * as XLSX from 'xlsx';
 
 interface LotterySettingsProps {
   settings: LotterySettingsType;
   onSettingsChange: (settings: LotterySettingsType) => void;
   onExportConfig?: () => void;
   onImportConfig?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onExcelImport?: (event: React.ChangeEvent<HTMLInputElement>) => void;
+  onDownloadTemplate?: () => void;
 }
 
 export const LotterySettings: React.FC<LotterySettingsProps> = ({ 
   settings, 
   onSettingsChange,
   onExportConfig,
-  onImportConfig
+  onImportConfig,
+  onExcelImport,
+  onDownloadTemplate
 }) => {
+  // 下載Excel模板
+  const handleDownloadTemplate = () => {
+    if (onDownloadTemplate) {
+      onDownloadTemplate();
+    } else {
+      // 預設模板下載邏輯
+      const templateData = [
+        { '姓名': '張三', '備註': '範例參與者' },
+        { '姓名': '李四', '備註': '範例參與者' },
+        { '姓名': '王五', '備註': '範例參與者' }
+      ];
+      
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, '參與者名單');
+      
+      // 設定欄位寬度
+      ws['!cols'] = [
+        { width: 15 }, // 姓名欄位
+        { width: 20 }  // 備註欄位
+      ];
+      
+      XLSX.writeFile(wb, '參與者名單模板.xlsx');
+    }
+  };
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
@@ -53,36 +83,75 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
           </p>
         </div> */}
 
-        {(onExportConfig || onImportConfig) && (
+        {(onExportConfig || onImportConfig || onExcelImport || onDownloadTemplate) && (
           <div className="border-t pt-4 mt-4">
-            <h4 className="text-lg font-semibold text-gray-700 mb-3">匯出/匯入設定</h4>
-            <div className="flex flex-col sm:flex-row gap-3">
-              {onExportConfig && (
-                <button
-                  onClick={onExportConfig}
-                  className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
-                >
-                  <Download size={16} />
-                  匯出設定
-                </button>
-              )}
-              
-              {onImportConfig && (
-                <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
-                  <Upload size={16} />
-                  匯入設定
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={onImportConfig}
-                    className="hidden"
-                  />
-                </label>
-              )}
-            </div>
-            <p className="text-sm text-gray-500 mt-2">
-              匯出設定可保存當前的獎項、參與者和設定；匯入設定會覆蓋目前所有資料
-            </p>
+            <h4 className="text-lg font-semibold text-gray-700 mb-3">匯出/匯入功能</h4>
+            
+            {/* 設定檔匯出匯入 */}
+            {(onExportConfig || onImportConfig) && (
+              <div className="mb-4">
+                <h5 className="text-md font-medium text-gray-600 mb-2">設定檔案</h5>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  {onExportConfig && (
+                    <button
+                      onClick={onExportConfig}
+                      className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                    >
+                      <Download size={16} />
+                      匯出設定
+                    </button>
+                  )}
+                  
+                  {onImportConfig && (
+                    <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
+                      <Upload size={16} />
+                      匯入設定
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={onImportConfig}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  匯出設定可保存當前的獎項、參與者和設定；匯入設定會覆蓋目前所有資料
+                </p>
+              </div>
+            )}
+
+            {/* Excel 匯入功能 */}
+            {(onExcelImport || onDownloadTemplate) && (
+              <div>
+                <h5 className="text-md font-medium text-gray-600 mb-2">Excel 參與者名單</h5>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    onClick={handleDownloadTemplate}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors duration-200"
+                  >
+                    <FileDown size={16} />
+                    下載Excel模板
+                  </button>
+                  
+                  {onExcelImport && (
+                    <label className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
+                      <FileSpreadsheet size={16} />
+                      匯入Excel名單
+                      <input
+                        type="file"
+                        accept=".xlsx,.xls"
+                        onChange={onExcelImport}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+                <p className="text-sm text-gray-500 mt-2">
+                  先下載Excel模板，填入參與者姓名後匯入。支援 .xlsx 和 .xls 格式
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>

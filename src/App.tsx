@@ -6,6 +6,7 @@ import { LotterySettings } from './components/LotterySettings';
 import { LotteryOverview } from './components/LotteryOverview';
 import { LotteryAnimation } from './components/LotteryAnimation';
 import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, AnimationState } from './types/lottery';
+import * as XLSX from 'xlsx';
 
 type AppState = 'setup' | 'overview' | 'drawing';
 
@@ -207,6 +208,59 @@ function App() {
     event.target.value = '';
   };
 
+  // Excel 參與者名單匯入
+  const importExcelParticipants = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        
+        // 將 Excel 數據轉換為 JSON
+        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 }) as string[][];
+        
+        // 過濾掉空行和標題行，提取參與者姓名
+        const newParticipants: Participant[] = [];
+        
+        for (let i = 1; i < jsonData.length; i++) { // 從第二行開始（跳過標題行）
+          const row = jsonData[i];
+          if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
+            const name = row[0].trim();
+            // 避免重複添加
+            if (!participants.some(p => p.name === name)) {
+              newParticipants.push({
+                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                name: name,
+                isSelected: false
+              });
+            }
+          }
+        }
+        
+        if (newParticipants.length === 0) {
+          alert('⚠️ 匯入失敗：未找到有效的參與者姓名！\n請確保 Excel 檔案第一欄包含參與者姓名。');
+          return;
+        }
+        
+        // 添加新參與者到現有列表
+        setParticipants(prev => [...prev, ...newParticipants]);
+        alert(`✅ 成功匯入 ${newParticipants.length} 位參與者！`);
+        
+      } catch (error) {
+        console.error('Excel import error:', error);
+        alert('⚠️ 匯入失敗：無法解析 Excel 檔案！\n請確保檔案格式正確。');
+      }
+    };
+
+    reader.readAsBinaryString(file);
+    event.target.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
       <header className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
@@ -233,6 +287,7 @@ function App() {
                 onSettingsChange={setSettings}
                 onExportConfig={exportConfig}
                 onImportConfig={importConfig}
+                onExcelImport={importExcelParticipants}
               />
             </div>
 
