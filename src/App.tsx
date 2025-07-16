@@ -13,14 +13,14 @@ type AppState = 'setup' | 'overview' | 'drawing';
 function App() {
   const [state, setState] = useState<AppState>('setup');
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: '特等獎', drawCount: 1 },
-    { id: '2', name: '一等獎', drawCount: 2 },
-    { id: '3', name: '二等獎', drawCount: 6 }
+    { id: '1', name: '特等獎-Keynote親筆簽名書', drawCount: 1 },
+    { id: '2', name: '一等獎-Keynote書', drawCount: 3},
+    { id: '3', name: '二等獎-禮品卡500元', drawCount: 6 }
   ]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [settings, setSettings] = useState<LotterySettingsType>({
     allowRepeat: false,
-    title: '旭聯科技 ATD25 分享會'
+    title: '旭聯科技 atd25 分享會'
   });
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
   const [, setWinners] = useState<Participant[]>([]);

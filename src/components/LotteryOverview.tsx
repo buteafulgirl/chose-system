@@ -30,14 +30,6 @@ export const LotteryOverview: React.FC<LotteryOverviewProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Title - centered at top */}
-      <div className="text-center">
-        <h2 className="text-4xl md:text-5xl font-bold text-gray-800">
-          {settings.title}
-        </h2>
-        <div className="w-24 h-1 bg-gradient-to-r from-orange-500 to-orange-600 mx-auto rounded-full mt-4"></div>
-      </div>
-
       {/* Participants count - fixed top left */}
       <div className="fixed top-24 left-4 z-10">
         <div className="bg-white rounded-xl shadow-lg p-4 border border-blue-200 min-w-[200px]">
