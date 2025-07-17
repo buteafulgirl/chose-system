@@ -15,7 +15,7 @@ function App() {
   const [prizes, setPrizes] = useState<Prize[]>([
     { id: '1', name: '特等獎-Keynote親筆簽名書', drawCount: 1 },
     { id: '2', name: '一等獎-Keynote書', drawCount: 3},
-    { id: '3', name: '二等獎-禮品卡500元', drawCount: 6 }
+    { id: '3', name: '二等獎-禮品卡500元', drawCount: 5 }
   ]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [settings, setSettings] = useState<LotterySettingsType>({
