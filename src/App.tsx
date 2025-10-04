@@ -22,6 +22,7 @@ function App() {
     allowRepeat: false,
     title: '旭聯科技 atd25 分享會'
   });
+  const [logoUrl, setLogoUrl] = useState<string>('/sunnetlogo.svg');
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
   const [, setWinners] = useState<Participant[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
@@ -325,11 +326,15 @@ function App() {
 
       <header className="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
         <div className="container mx-auto px-4">
-          <h1 className="text-3xl md:text-4xl font-bold text-center flex items-center justify-center gap-3">
-            <Sparkles size={40} />
-            {state === 'setup' ? '抽獎系統設定' : settings.title}
-            <Sparkles size={40} />
-          </h1>
+          <div className="flex items-center justify-between">
+            <img src={logoUrl} alt="Logo" className="h-12 md:h-16 object-contain" />
+            <h1 className="text-2xl md:text-4xl font-bold flex items-center gap-3">
+              <Sparkles size={32} />
+              {state === 'setup' ? '抽獎系統設定' : settings.title}
+              <Sparkles size={32} />
+            </h1>
+            <div className="w-12 md:w-16"></div>
+          </div>
         </div>
       </header>
 
@@ -341,7 +346,58 @@ function App() {
               <ParticipantManager participants={participants} onParticipantsChange={setParticipants} />
             </div>
 
-            <div className="max-w-md mx-auto">
+            <div className="max-w-2xl mx-auto space-y-6">
+              <div className="bg-white rounded-xl shadow-lg p-6">
+                <h2 className="text-2xl font-bold mb-6 text-orange-600 flex items-center gap-2">
+                  <SettingsIcon size={28} />
+                  後台設定
+                </h2>
+
+                <div className="space-y-6">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      活動標題
+                    </label>
+                    <input
+                      type="text"
+                      value={settings.title}
+                      onChange={(e) => setSettings({ ...settings, title: e.target.value })}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 focus:ring-2 focus:ring-orange-200 transition-all"
+                      placeholder="請輸入活動標題"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Logo 圖片
+                    </label>
+                    <div className="space-y-3">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            const reader = new FileReader();
+                            reader.onload = (event) => {
+                              setLogoUrl(event.target?.result as string);
+                            };
+                            reader.readAsDataURL(file);
+                          }
+                        }}
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:border-orange-500 transition-all file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-orange-100 file:text-orange-700 hover:file:bg-orange-200 file:cursor-pointer"
+                      />
+                      {logoUrl && (
+                        <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                          <img src={logoUrl} alt="Logo預覽" className="h-16 object-contain" />
+                          <span className="text-sm text-gray-600">當前Logo預覽</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <LotterySettings
                 settings={settings}
                 onSettingsChange={setSettings}
