@@ -320,8 +320,6 @@ function App() {
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#f5f3e8] via-[#faf5f0] to-[#ffe5e5]">
       <img src="/image copy.png" alt="" className="absolute top-0 right-0 w-64 h-64 object-contain opacity-60" />
       <img src="/image copy.png" alt="" className="absolute bottom-0 left-0 w-48 h-48 object-contain opacity-70 transform scale-x-[-1]" />
-      <img src="/image copy.png" alt="" className="absolute top-1/3 right-20 w-96 h-96 object-contain opacity-40 transform rotate-45" />
-      <img src="/image copy.png" alt="" className="absolute bottom-1/4 right-1/4 w-80 h-80 object-contain opacity-30 transform rotate-180" />
       <img src="/image copy.png" alt="" className="absolute top-20 left-10 w-56 h-56 object-contain opacity-50 transform scale-x-[-1] rotate-90" />
       <img src="/image copy.png" alt="" className="absolute bottom-10 right-10 w-40 h-40 object-contain opacity-60 transform rotate-[-30deg]" />
 
