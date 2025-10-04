@@ -395,14 +395,69 @@ function App() {
                       )}
                     </div>
                   </div>
+
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold text-gray-700 mb-4">匯出/匯入功能</h3>
+                    <div className="space-y-4">
+                      <div>
+                        <h4 className="text-md font-medium text-gray-600 mb-2">設定檔案</h4>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <button
+                            onClick={exportConfig}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors duration-200"
+                          >
+                            <SettingsIcon size={16} />
+                            匯出設定
+                          </button>
+                          <label className="flex items-center justify-center gap-2 px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
+                            <SettingsIcon size={16} />
+                            匯入設定
+                            <input
+                              type="file"
+                              accept=".json"
+                              onChange={importConfig}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">
+                          匯出設定可保存當前的獎項、參與者和設定；匯入設定會覆蓋目前所有資料
+                        </p>
+                      </div>
+
+                      <div>
+                        <h4 className="text-md font-medium text-gray-600 mb-2">Excel 完整設定</h4>
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <button
+                            onClick={downloadExcelTemplate}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors duration-200"
+                          >
+                            <SettingsIcon size={16} />
+                            下載Excel模板
+                          </button>
+                          <label className="flex items-center justify-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors duration-200 cursor-pointer">
+                            <SettingsIcon size={16} />
+                            匯入Excel設定
+                            <input
+                              type="file"
+                              accept=".xlsx,.xls"
+                              onChange={importExcel}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
+                        <p className="text-sm text-gray-500 mt-2">
+                          Excel模板包含「獎項設定」和「參與者名單」兩個工作表。支援 .xlsx 和 .xls 格式
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
               <LotterySettings
                 settings={settings}
                 onSettingsChange={setSettings}
-                onExportConfig={exportConfig}
-                onImportConfig={importConfig}
                 onExcelImport={importExcelConfig}
               />
             </div>
