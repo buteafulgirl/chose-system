@@ -317,8 +317,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-blue-50">
-      <header className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-[#f5f3e8] via-[#faf5f0] to-[#ffe5e5]">
+      <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-[#ff9b7c] to-[#ffa588] rounded-full blur-3xl opacity-40"></div>
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-[#ff9b7c] to-[#ffa588] rounded-full blur-3xl opacity-40"></div>
+      <div className="absolute bottom-20 right-32 w-96 h-96 bg-gradient-to-tl from-[#ff9b7c] to-[#ffa588] rounded-full blur-3xl opacity-30"></div>
+
+      <header className="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
         <div className="container mx-auto px-4">
           <h1 className="text-3xl md:text-4xl font-bold text-center flex items-center justify-center gap-3">
             <Sparkles size={40} />
@@ -328,7 +332,7 @@ function App() {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8 relative z-10">
         {state === 'setup' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
