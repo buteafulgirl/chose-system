@@ -13,14 +13,15 @@ type AppState = 'setup' | 'overview' | 'drawing';
 function App() {
   const [state, setState] = useState<AppState>('setup');
   const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: '特等獎-Keynote親筆簽名書', drawCount: 1 },
-    { id: '2', name: '一等獎-Keynote書', drawCount: 3},
-    { id: '3', name: '二等獎-禮品卡500元', drawCount: 5 }
+    { id: '1', name: '金獎-Dyson吹風機', drawCount: 2 },
+    { id: '2', name: '銀獎-Apple Watch SE3', drawCount: 2},
+    { id: '3', name: '銅獎-日本千石瞬熱石墨烤箱', drawCount: 3 },
+    { id: '4', name: '加碼獎- 產品體驗券', drawCount: 4 }
   ]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [settings, setSettings] = useState<LotterySettingsType>({
     allowRepeat: false,
-    title: '旭聯科技 atd25 分享會'
+    title: '2025產品聯合發表會'
   });
   const [logoUrl, setLogoUrl] = useState<string>('/sunnetlogo.svg');
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
