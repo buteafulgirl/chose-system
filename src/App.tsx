@@ -209,6 +209,38 @@ function App() {
     event.target.value = '';
   };
 
+  // 下載Excel模板
+  const downloadExcelTemplate = () => {
+    const wb = XLSX.utils.book_new();
+
+    // 獎項設定工作表
+    const prizeData = [
+      { '獎項名稱': '特等獎', '中獎人數': 1 },
+      { '獎項名稱': '一等獎', '中獎人數': 2 },
+      { '獎項名稱': '二等獎', '中獎人數': 6 }
+    ];
+    const prizeSheet = XLSX.utils.json_to_sheet(prizeData);
+    prizeSheet['!cols'] = [
+      { width: 20 },
+      { width: 15 }
+    ];
+    XLSX.utils.book_append_sheet(wb, prizeSheet, '獎項設定');
+
+    // 參與者名單工作表
+    const participantData = [
+      { '姓名': '張三' },
+      { '姓名': '李四' },
+      { '姓名': '王五' }
+    ];
+    const participantSheet = XLSX.utils.json_to_sheet(participantData);
+    participantSheet['!cols'] = [
+      { width: 20 }
+    ];
+    XLSX.utils.book_append_sheet(wb, participantSheet, '參與者名單');
+
+    XLSX.writeFile(wb, '抽獎系統模板.xlsx');
+  };
+
   // Excel 完整設定匯入（獎項 + 參與者）
   const importExcelConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -441,7 +473,7 @@ function App() {
                             <input
                               type="file"
                               accept=".xlsx,.xls"
-                              onChange={importExcel}
+                              onChange={importExcelConfig}
                               className="hidden"
                             />
                           </label>
