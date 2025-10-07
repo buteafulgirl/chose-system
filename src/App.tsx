@@ -16,7 +16,7 @@ function App() {
     { id: '1', name: '金獎-Dyson吹風機', drawCount: 2 },
     { id: '2', name: '銀獎-Apple Watch SE3', drawCount: 2},
     { id: '3', name: '銅獎-日本千石瞬熱石墨烤箱', drawCount: 3 },
-    { id: '4', name: '加碼獎- 產品體驗券', drawCount: 4 }
+    { id: '4', name: '加碼獎- 產品體驗券', drawCount: 10 }
   ]);
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [settings, setSettings] = useState<LotterySettingsType>({
