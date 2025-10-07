@@ -57,7 +57,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
     }
   };
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6">
+    <div>
     </div>
   );
 };
