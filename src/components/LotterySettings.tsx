@@ -62,7 +62,7 @@ export const LotterySettings: React.FC<LotterySettingsProps> = ({
         <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mr-3">
           <Settings size={16} className="text-white" />
         </div>
-        抽獎設定
+        抽獎設定s
       </h3>
       
       <div className="space-y-4">
