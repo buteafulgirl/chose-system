@@ -324,16 +324,16 @@ function App() {
       <img src="/image copy.png" alt="" className="absolute top-20 left-10 w-56 h-56 object-contain opacity-50 transform scale-x-[-1] rotate-90" />
       <img src="/image copy.png" alt="" className="absolute bottom-10 right-10 w-40 h-40 object-contain opacity-60 transform rotate-[-30deg]" />
 
-      <header className="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-6 shadow-lg">
+      <header className="relative bg-gradient-to-r from-orange-500 to-orange-600 text-white py-3 shadow-lg">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <img src={logoUrl} alt="Logo" className="h-12 md:h-16 object-contain" />
-            <h1 className="text-2xl md:text-4xl font-bold flex items-center gap-3">
-              <Sparkles size={32} />
-              {state === 'setup' ? '抽獎系統設定' : settings.title}
-              <Sparkles size={32} />
+          <div className="flex items-center justify-between gap-4">
+            <img src={logoUrl} alt="Logo" className="h-10 md:h-12 object-contain flex-shrink-0" />
+            <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 flex-1 justify-center">
+              <Sparkles size={24} className="flex-shrink-0" />
+              <span className="truncate">{state === 'setup' ? '抽獎系統設定' : settings.title}</span>
+              <Sparkles size={24} className="flex-shrink-0" />
             </h1>
-            <div className="w-12 md:w-16"></div>
+            <div className="w-10 md:w-12 flex-shrink-0"></div>
           </div>
         </div>
       </header>
