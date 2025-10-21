@@ -1,7 +1,14 @@
-export interface Prize {
+export interface ParticipantList {
   id: string;
   name: string;
+}
+
+export interface Prize {
+  id: string;
+  number: number;              // 自動編號（從1開始）
+  name: string;
   drawCount: number;
+  participantListId?: string;  // 綁定的名單ID（optional = 所有名單都可）
 }
 
 export interface Participant {
@@ -28,11 +35,16 @@ export interface RedrawRequest {
   redrawCount: number;
 }
 
+export interface ParticipantListData {
+  list: ParticipantList;
+  participants: Participant[];
+}
+
 export interface LotteryConfig {
   version: string;
   exportDate: string;
   prizes: Prize[];
-  participants: Participant[];
+  participantLists: ParticipantListData[];  // 名單及其參與者
   settings: LotterySettings;
 }
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { Play, Settings, Trophy, Users } from 'lucide-react';
-import { Prize, Participant, LotterySettings } from '../types/lottery';
+import { Prize, Participant, LotterySettings, ParticipantListData } from '../types/lottery';
 
 interface LotteryOverviewProps {
   settings: LotterySettings;
   prizes: Prize[];
-  participants: Participant[];
+  participantLists: ParticipantListData[];
   onStartPrizeDraw: (prize: Prize) => void;
   onBackToSettings: () => void;
   allResults: { prize: Prize; winners: Participant[] }[];
@@ -14,14 +14,17 @@ interface LotteryOverviewProps {
 export const LotteryOverview: React.FC<LotteryOverviewProps> = ({
   settings,
   prizes,
-  participants,
+  participantLists,
   onStartPrizeDraw,
   onBackToSettings,
   allResults
 }) => {
-  const availableParticipants = settings.allowRepeat 
-    ? participants 
-    : participants.filter(p => !p.isSelected);
+  // 計算所有參與者
+  const allParticipants = participantLists.flatMap(l => l.participants);
+
+  const availableParticipants = settings.allowRepeat
+    ? allParticipants
+    : allParticipants.filter(p => !p.isSelected);
 
   const getPrizeStatus = (prize: Prize) => {
     const result = allResults.find(r => r.prize.id === prize.id);
@@ -43,9 +46,9 @@ export const LotteryOverview: React.FC<LotteryOverviewProps> = ({
             <div className="text-2xl font-bold text-blue-600">
               可參與抽獎人數：{availableParticipants.length}
             </div>
-            {!settings.allowRepeat && participants.some(p => p.isSelected) && (
+            {!settings.allowRepeat && allParticipants.some(p => p.isSelected) && (
               <div className="text-sm text-gray-500 mt-1">
-                ({participants.filter(p => p.isSelected).length} 人已中獎)
+                ({allParticipants.filter(p => p.isSelected).length} 人已中獎)
               </div>
             )}
           </div>

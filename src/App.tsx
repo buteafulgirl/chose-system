@@ -5,20 +5,22 @@ import { ParticipantManager } from './components/ParticipantManager';
 import { LotterySettings } from './components/LotterySettings';
 import { LotteryOverview } from './components/LotteryOverview';
 import { LotteryAnimation } from './components/LotteryAnimation';
-import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, AnimationState } from './types/lottery';
+import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, AnimationState, ParticipantList, ParticipantListData } from './types/lottery';
 import * as XLSX from 'xlsx';
 
 type AppState = 'setup' | 'overview' | 'drawing';
 
 function App() {
   const [state, setState] = useState<AppState>('setup');
-  const [prizes, setPrizes] = useState<Prize[]>([
-    { id: '1', name: '金獎-Dyson吹風機', drawCount: 2 },
-    { id: '2', name: '銀獎-Apple Watch SE3', drawCount: 2},
-    { id: '3', name: '銅獎-日本千石瞬熱石墨烤箱', drawCount: 3 },
-    { id: '4', name: '加碼獎- 產品體驗券', drawCount: 10 }
+  const [participantLists, setParticipantLists] = useState<ParticipantListData[]>([
+    { list: { id: '1', name: '通用參與者' }, participants: [] }  // 默認名單
   ]);
-  const [participants, setParticipants] = useState<Participant[]>([]);
+  const [prizes, setPrizes] = useState<Prize[]>([
+    { id: '1', number: 1, name: '金獎-Dyson吹風機', drawCount: 2 },
+    { id: '2', number: 2, name: '銀獎-Apple Watch SE3', drawCount: 2},
+    { id: '3', number: 3, name: '銅獎-日本千石瞬熱石墨烤箱', drawCount: 3 },
+    { id: '4', number: 4, name: '加碼獎- 產品體驗券', drawCount: 10 }
+  ]);
   const [settings, setSettings] = useState<LotterySettingsType>({
     allowRepeat: false,
     title: '2025產品聯合發表會'
@@ -35,7 +37,8 @@ function App() {
 
 
   const completeSettings = () => {
-    if (participants.length === 0) {
+    const totalParticipants = participantLists.reduce((sum, list) => sum + list.participants.length, 0);
+    if (totalParticipants === 0) {
       alert('請先新增參與者！');
       return;
     }
@@ -48,9 +51,22 @@ function App() {
 
   const startPrizeDraw = (prize: Prize) => {
     console.log('🎯 Starting prize draw for:', prize.name);
+
+    // 第一層過濾：根據名單篩選
+    let listFiltered: Participant[] = [];
+    if (prize.participantListId) {
+      // 綁定到特定名單
+      const targetList = participantLists.find(l => l.list.id === prize.participantListId);
+      listFiltered = targetList?.participants || [];
+    } else {
+      // 沒有綁定名單 = 所有名單的參與者都可以
+      listFiltered = participantLists.flatMap(l => l.participants);
+    }
+
+    // 第二層過濾：根據重複抽獎設置
     const availableParticipants = settings.allowRepeat
-      ? participants
-      : participants.filter(p => !p.isSelected);
+      ? listFiltered
+      : listFiltered.filter(p => !p.isSelected);
 
     if (availableParticipants.length < prize.drawCount) {
       alert(`可抽獎人數不足！需要 ${prize.drawCount} 人，目前可抽獎人數：${availableParticipants.length}`);
@@ -76,9 +92,12 @@ function App() {
 
     if (!settings.allowRepeat) {
       // 標記所有中獎者
-      setParticipants(prev => prev.map(p => ({
-        ...p,
-        isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
+      setParticipantLists(prev => prev.map(list => ({
+        ...list,
+        participants: list.participants.map(p => ({
+          ...p,
+          isSelected: selectedWinners.some(w => w.id === p.id) || p.isSelected
+        }))
       })));
     }
 
@@ -87,8 +106,8 @@ function App() {
       const existingResultIndex = allResults.findIndex(result => result.prize.id === currentPrize.id);
       if (existingResultIndex >= 0) {
         // 更新現有結果
-        setAllResults(prev => prev.map((result, index) => 
-          index === existingResultIndex 
+        setAllResults(prev => prev.map((result, index) =>
+          index === existingResultIndex
             ? { ...result, winners: selectedWinners }
             : result
         ));
@@ -114,7 +133,10 @@ function App() {
     setIsDrawing(false);
     setCurrentAnimationPhase('idle');
     setAllResults([]);
-    setParticipants(prev => prev.map(p => ({ ...p, isSelected: false })));
+    setParticipantLists(prev => prev.map(list => ({
+      ...list,
+      participants: list.participants.map(p => ({ ...p, isSelected: false }))
+    })));
     setEffectiveParticipantsForDraw([]);
     setAvailableForRedraw([]);
   };
@@ -139,7 +161,7 @@ function App() {
       version: '1.0.0',
       exportDate: new Date().toISOString(),
       prizes,
-      participants,
+      participantLists,
       settings
     };
 
@@ -169,15 +191,23 @@ function App() {
       typeof obj.version === 'string' &&
       typeof obj.exportDate === 'string' &&
       Array.isArray(obj.prizes) &&
-      Array.isArray(obj.participants) &&
+      Array.isArray(obj.participantLists) &&
       typeof settings.allowRepeat === 'boolean' &&
       typeof settings.title === 'string' &&
       obj.prizes.every((prize: unknown) =>
-        prize && typeof prize === 'object' && 'id' in prize && 'name' in prize && 'drawCount' in prize &&
-        typeof (prize as { drawCount: unknown }).drawCount === 'number'
+        prize && typeof prize === 'object' && 'id' in prize && 'number' in prize && 'name' in prize && 'drawCount' in prize &&
+        typeof (prize as { drawCount: unknown }).drawCount === 'number' &&
+        typeof (prize as { number: unknown }).number === 'number'
       ) &&
-      obj.participants.every((participant: unknown) =>
-        participant && typeof participant === 'object' && 'id' in participant && 'name' in participant
+      (obj.participantLists as unknown[]).every((listData: unknown) =>
+        listData && typeof listData === 'object' &&
+        'list' in listData && 'participants' in listData &&
+        (listData as any).list && typeof (listData as any).list === 'object' &&
+        'id' in (listData as any).list && 'name' in (listData as any).list &&
+        Array.isArray((listData as any).participants) &&
+        ((listData as any).participants as unknown[]).every((p: unknown) =>
+          p && typeof p === 'object' && 'id' in p && 'name' in p
+        )
       )
     );
   };
@@ -196,11 +226,17 @@ function App() {
           return;
         }
 
-          setPrizes(configData.prizes);
-          setParticipants(configData.participants.map((p: Participant) => ({ ...p, isSelected: false })));
-          setSettings(configData.settings);
-          setAllResults([]);
-          setState('setup');
+        // 為參與者添加 isSelected: false
+        const importedLists = configData.participantLists.map((listData: ParticipantListData) => ({
+          list: listData.list,
+          participants: listData.participants.map(p => ({ ...p, isSelected: false }))
+        }));
+
+        setParticipantLists(importedLists);
+        setPrizes(configData.prizes);
+        setSettings(configData.settings);
+        setAllResults([]);
+        setState('setup');
       } catch {
         alert('⚠️ 匯入失敗：無法解析檔案內容！');
       }
@@ -214,35 +250,49 @@ function App() {
   const downloadExcelTemplate = () => {
     const wb = XLSX.utils.book_new();
 
-    // 獎項設定工作表
+    // 1. 參與名單工作表
+    const listData = [
+      { '名單ID': 'list1', '名單名稱': '通用參與者' },
+      { '名單ID': 'list2', '名單名稱': 'VIP客戶' }
+    ];
+    const listSheet = XLSX.utils.json_to_sheet(listData);
+    listSheet['!cols'] = [
+      { width: 15 },
+      { width: 20 }
+    ];
+    XLSX.utils.book_append_sheet(wb, listSheet, '參與名單');
+
+    // 2. 獎項設定工作表（增加綁定名單ID列）
     const prizeData = [
-      { '獎項名稱': '特等獎', '中獎人數': 1 },
-      { '獎項名稱': '一等獎', '中獎人數': 2 },
-      { '獎項名稱': '二等獎', '中獎人數': 6 }
+      { '獎項名稱': '特等獎', '中獎人數': 1, '綁定名單ID': '' },
+      { '獎項名稱': '一等獎', '中獎人數': 2, '綁定名單ID': 'list2' },
+      { '獎項名稱': '二等獎', '中獎人數': 6, '綁定名單ID': '' }
     ];
     const prizeSheet = XLSX.utils.json_to_sheet(prizeData);
     prizeSheet['!cols'] = [
       { width: 20 },
+      { width: 15 },
       { width: 15 }
     ];
     XLSX.utils.book_append_sheet(wb, prizeSheet, '獎項設定');
 
-    // 參與者名單工作表
+    // 3. 參與者清單工作表（增加名單ID列）
     const participantData = [
-      { '姓名': '張三' },
-      { '姓名': '李四' },
-      { '姓名': '王五' }
+      { '名單ID': 'list1', '姓名': '張三' },
+      { '名單ID': 'list2', '姓名': '李四' },
+      { '名單ID': 'list1', '姓名': '王五' }
     ];
     const participantSheet = XLSX.utils.json_to_sheet(participantData);
     participantSheet['!cols'] = [
+      { width: 15 },
       { width: 20 }
     ];
-    XLSX.utils.book_append_sheet(wb, participantSheet, '參與者名單');
+    XLSX.utils.book_append_sheet(wb, participantSheet, '參與者清單');
 
     XLSX.writeFile(wb, '抽獎系統模板.xlsx');
   };
 
-  // Excel 完整設定匯入（獎項 + 參與者）
+  // Excel 完整設定匯入（參與名單 + 參與者 + 獎項）
   const importExcelConfig = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -252,94 +302,133 @@ function App() {
       try {
         const data = e.target?.result;
         const workbook = XLSX.read(data, { type: 'binary' });
-        
+
+        let importedLists: ParticipantList[] = [];
         let importedPrizes: Prize[] = [];
-        let importedParticipants: Participant[] = [];
-        
-        // 嘗試讀取獎項設定工作表
+        const participantsByListId: Map<string, Participant[]> = new Map();
+
+        // 1. 讀取參與名單工作表
+        if (workbook.SheetNames.includes('參與名單')) {
+          const listSheet = workbook.Sheets['參與名單'];
+          const listJsonData = XLSX.utils.sheet_to_json(listSheet, { header: 1 }) as (string | number)[][];
+
+          for (let i = 1; i < listJsonData.length; i++) {
+            const row = listJsonData[i];
+            if (row && row[0] && row[1]) {
+              const listId = String(row[0]).trim();
+              const listName = String(row[1]).trim();
+              if (listId && listName) {
+                importedLists.push({ id: listId, name: listName });
+                participantsByListId.set(listId, []);
+              }
+            }
+          }
+        }
+
+        // 確保至少有一個默認名單
+        if (importedLists.length === 0) {
+          const defaultListId = '1';
+          importedLists = [{ id: defaultListId, name: '通用參與者' }];
+          participantsByListId.set(defaultListId, []);
+        }
+
+        // 2. 讀取獎項設定工作表
         if (workbook.SheetNames.includes('獎項設定')) {
           const prizeSheet = workbook.Sheets['獎項設定'];
           const prizeJsonData = XLSX.utils.sheet_to_json(prizeSheet, { header: 1 }) as (string | number)[][];
-          
-          for (let i = 1; i < prizeJsonData.length; i++) { // 從第二行開始（跳過標題行）
+
+          let prizeNumber = 1;
+          for (let i = 1; i < prizeJsonData.length; i++) {
             const row = prizeJsonData[i];
             if (row && row[0] && row[1] && typeof row[0] === 'string' && typeof row[1] === 'number') {
               const name = row[0].trim();
-              const drawCount = Math.max(1, Math.floor(row[1])); // 確保至少為1且為整數
-              
+              const drawCount = Math.max(1, Math.floor(row[1]));
+              const participantListId = row[2] ? String(row[2]).trim() : undefined;
+
               if (name) {
                 importedPrizes.push({
                   id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                  number: prizeNumber++,
                   name: name,
-                  drawCount: drawCount
+                  drawCount: drawCount,
+                  participantListId: participantListId || undefined
                 });
               }
             }
           }
         }
-        
-        // 嘗試讀取參與者名單工作表
-        if (workbook.SheetNames.includes('參與者名單')) {
-          const participantSheet = workbook.Sheets['參與者名單'];
-          const participantJsonData = XLSX.utils.sheet_to_json(participantSheet, { header: 1 }) as string[][];
-          
-          for (let i = 1; i < participantJsonData.length; i++) { // 從第二行開始（跳過標題行）
+
+        // 3. 讀取參與者清單工作表
+        if (workbook.SheetNames.includes('參與者清單')) {
+          const participantSheet = workbook.Sheets['參與者清單'];
+          const participantJsonData = XLSX.utils.sheet_to_json(participantSheet, { header: 1 }) as (string | number)[][];
+
+          for (let i = 1; i < participantJsonData.length; i++) {
             const row = participantJsonData[i];
-            if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
-              const name = row[0].trim();
-              importedParticipants.push({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                name: name,
-                isSelected: false
-              });
-            }
-          }
-        } else {
-          // 如果沒有專門的參與者名單工作表，嘗試從第一個工作表讀取
-          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 }) as string[][];
-          
-          for (let i = 1; i < jsonData.length; i++) {
-            const row = jsonData[i];
-            if (row && row[0] && typeof row[0] === 'string' && row[0].trim()) {
-              const name = row[0].trim();
-              importedParticipants.push({
-                id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-                name: name,
-                isSelected: false
-              });
+            if (row && row[0] && row[1]) {
+              const listId = String(row[0]).trim();
+              const name = String(row[1]).trim();
+
+              // 檢查名單是否存在
+              if (!participantsByListId.has(listId)) {
+                // 如果名單不存在，使用第一個名單
+                const defaultListId = importedLists[0]?.id || '1';
+                const participants = participantsByListId.get(defaultListId) || [];
+                participants.push({
+                  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                  name: name,
+                  isSelected: false
+                });
+                participantsByListId.set(defaultListId, participants);
+              } else {
+                const participants = participantsByListId.get(listId) || [];
+                participants.push({
+                  id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                  name: name,
+                  isSelected: false
+                });
+                participantsByListId.set(listId, participants);
+              }
             }
           }
         }
-        
+
         // 檢查匯入結果
-        if (importedPrizes.length === 0 && importedParticipants.length === 0) {
+        const totalParticipants = Array.from(participantsByListId.values()).reduce((sum, p) => sum + p.length, 0);
+        if (importedPrizes.length === 0 && totalParticipants === 0) {
           alert('⚠️ 匯入失敗：未找到有效的獎項或參與者資料！\n請確保 Excel 檔案包含正確的工作表和資料格式。');
           return;
         }
-        
+
+        // 組合名單和參與者
+        const importedListsWithParticipants: ParticipantListData[] = importedLists.map(list => ({
+          list,
+          participants: participantsByListId.get(list.id) || []
+        }));
+
         // 更新應用狀態
+        setParticipantLists(importedListsWithParticipants);
         if (importedPrizes.length > 0) {
           setPrizes(importedPrizes);
         }
-        if (importedParticipants.length > 0) {
-          setParticipants(importedParticipants);
-        }
-        
+
         // 重置其他狀態
         setAllResults([]);
         setState('setup');
-        
+
         const successMessage = [];
+        if (importedLists.length > 0) {
+          successMessage.push(`${importedLists.length} 個參與名單`);
+        }
         if (importedPrizes.length > 0) {
           successMessage.push(`${importedPrizes.length} 個獎項`);
         }
-        if (importedParticipants.length > 0) {
-          successMessage.push(`${importedParticipants.length} 位參與者`);
+        if (totalParticipants > 0) {
+          successMessage.push(`${totalParticipants} 位參與者`);
         }
-        
+
         alert(`✅ 成功匯入：${successMessage.join('、')}！`);
-        
+
       } catch (error) {
         console.error('Excel import error:', error);
         alert('⚠️ 匯入失敗：無法解析 Excel 檔案！\n請確保檔案格式正確。');
@@ -375,8 +464,11 @@ function App() {
         {state === 'setup' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <PrizeManager prizes={prizes} onPrizesChange={setPrizes} />
-              <ParticipantManager participants={participants} onParticipantsChange={setParticipants} />
+              <PrizeManager prizes={prizes} participantLists={participantLists} onPrizesChange={setPrizes} />
+              <ParticipantManager
+                participantLists={participantLists}
+                onParticipantListsChange={setParticipantLists}
+              />
             </div>
 
             <div className="max-w-2xl mx-auto space-y-6">
@@ -498,7 +590,7 @@ function App() {
             <div className="text-center">
               <button
                 onClick={completeSettings}
-                disabled={participants.length === 0 || prizes.length === 0}
+                disabled={participantLists.reduce((sum, list) => sum + list.participants.length, 0) === 0 || prizes.length === 0}
                 className="px-12 py-4 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-300 font-bold text-xl shadow-lg transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-3 mx-auto"
               >
                 <SettingsIcon size={24} />
@@ -512,7 +604,7 @@ function App() {
           <LotteryOverview
             settings={settings}
             prizes={prizes}
-            participants={participants}
+            participantLists={participantLists}
             onStartPrizeDraw={startPrizeDraw}
             onBackToSettings={backToSettings}
             allResults={allResults}
