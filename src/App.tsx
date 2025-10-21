@@ -48,9 +48,14 @@ function App() {
 
   const startPrizeDraw = (prize: Prize) => {
     console.log('🎯 Starting prize draw for:', prize.name);
+
+    // 獲取此獎項的參與者列表
+    const prizeParticipants = participants.filter(p => prize.participantIds.includes(p.id));
+
+    // 根據是否允許重複中獎來過濾可用的參與者
     const availableParticipants = settings.allowRepeat
-      ? participants
-      : participants.filter(p => !p.isSelected);
+      ? prizeParticipants
+      : prizeParticipants.filter(p => !p.isSelected);
 
     if (availableParticipants.length < prize.drawCount) {
       alert(`可抽獎人數不足！需要 ${prize.drawCount} 人，目前可抽獎人數：${availableParticipants.length}`);
@@ -319,11 +324,16 @@ function App() {
         }
         
         // 更新應用狀態
-        if (importedPrizes.length > 0) {
-          setPrizes(importedPrizes);
-        }
         if (importedParticipants.length > 0) {
           setParticipants(importedParticipants);
+        }
+        if (importedPrizes.length > 0) {
+          // 為每個獎項設定包含所有參與者
+          const prizesWithParticipants = importedPrizes.map(prize => ({
+            ...prize,
+            participantIds: importedParticipants.map(p => p.id)
+          }));
+          setPrizes(prizesWithParticipants);
         }
         
         // 重置其他狀態
@@ -375,7 +385,7 @@ function App() {
         {state === 'setup' && (
           <div className="space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              <PrizeManager prizes={prizes} onPrizesChange={setPrizes} />
+              <PrizeManager prizes={prizes} onPrizesChange={setPrizes} participants={participants} />
               <ParticipantManager participants={participants} onParticipantsChange={setParticipants} />
             </div>
 

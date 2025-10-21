@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
-import { Plus, Edit2, Trash2, Save, X } from 'lucide-react';
-import { Prize } from '../types/lottery';
+import { Plus, Edit2, Trash2, Save, X, Users, ChevronDown, ChevronUp } from 'lucide-react';
+import { Prize, Participant } from '../types/lottery';
 
 interface PrizeManagerProps {
   prizes: Prize[];
   onPrizesChange: (prizes: Prize[]) => void;
+  participants: Participant[];
 }
 
-export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChange }) => {
+export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChange, participants }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [editDrawCount, setEditDrawCount] = useState('1');
   const [newPrize, setNewPrize] = useState('');
   const [newDrawCount, setNewDrawCount] = useState('1');
+  const [expandedPrizeId, setExpandedPrizeId] = useState<string | null>(null);
 
   const addPrize = () => {
     if (newPrize.trim()) {
@@ -20,7 +22,8 @@ export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChan
       const prize: Prize = {
         id: Date.now().toString(),
         name: newPrize.trim(),
-        drawCount
+        drawCount,
+        participantIds: participants.map(p => p.id) // 預設包含所有參與者
       };
       onPrizesChange([...prizes, prize]);
       setNewPrize('');
@@ -54,6 +57,34 @@ export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChan
 
   const deletePrize = (id: string) => {
     onPrizesChange(prizes.filter(p => p.id !== id));
+  };
+
+  const toggleParticipant = (prizeId: string, participantId: string) => {
+    onPrizesChange(prizes.map(prize => {
+      if (prize.id === prizeId) {
+        const isSelected = prize.participantIds.includes(participantId);
+        return {
+          ...prize,
+          participantIds: isSelected
+            ? prize.participantIds.filter(id => id !== participantId)
+            : [...prize.participantIds, participantId]
+        };
+      }
+      return prize;
+    }));
+  };
+
+  const toggleAllParticipants = (prizeId: string) => {
+    onPrizesChange(prizes.map(prize => {
+      if (prize.id === prizeId) {
+        const allSelected = prize.participantIds.length === participants.length;
+        return {
+          ...prize,
+          participantIds: allSelected ? [] : participants.map(p => p.id)
+        };
+      }
+      return prize;
+    }));
   };
 
   return (
@@ -106,25 +137,64 @@ export const PrizeManager: React.FC<PrizeManagerProps> = ({ prizes, onPrizesChan
                 </div>
               </div>
             ) : (
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="text-gray-800 font-medium">{prize.name}</div>
-                  <div className="text-sm text-orange-600">抽獎人數: {prize.drawCount} 人</div>
+              <div>
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <div className="text-gray-800 font-medium">{prize.name}</div>
+                    <div className="text-sm text-orange-600">抽獎人數: {prize.drawCount} 人</div>
+                    <div className="text-sm text-blue-600">參與者: {prize.participantIds.length} 人</div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setExpandedPrizeId(expandedPrizeId === prize.id ? null : prize.id)}
+                      className="p-2 text-purple-600 hover:bg-purple-100 rounded-lg transition-colors"
+                      title="管理參與者"
+                    >
+                      {expandedPrizeId === prize.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    </button>
+                    <button
+                      onClick={() => startEdit(prize)}
+                      className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button
+                      onClick={() => deletePrize(prize.id)}
+                      className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => startEdit(prize)}
-                    className="p-2 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button
-                    onClick={() => deletePrize(prize.id)}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
+                {expandedPrizeId === prize.id && (
+                  <div className="mt-3 pt-3 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                        <Users size={16} />
+                        選擇參與此獎項抽獎的人員
+                      </span>
+                      <button
+                        onClick={() => toggleAllParticipants(prize.id)}
+                        className="text-xs px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                      >
+                        {prize.participantIds.length === participants.length ? '取消全選' : '全選'}
+                      </button>
+                    </div>
+                    <div className="max-h-48 overflow-y-auto space-y-1">
+                      {participants.map(participant => (
+                        <label key={participant.id} className="flex items-center gap-2 p-2 hover:bg-gray-100 rounded cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={prize.participantIds.includes(participant.id)}
+                            onChange={() => toggleParticipant(prize.id, participant.id)}
+                            className="w-4 h-4 text-orange-600 rounded focus:ring-orange-500"
+                          />
+                          <span className="text-sm text-gray-700">{participant.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>

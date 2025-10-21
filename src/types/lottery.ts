@@ -2,6 +2,7 @@ export interface Prize {
   id: string;
   name: string;
   drawCount: number;
+  participantIds: string[]; // 參與此獎項抽獎的參與者ID列表
 }
 
 export interface Participant {
