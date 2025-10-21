@@ -10,13 +10,15 @@ interface RevelationPhaseProps {
   onReset?: () => void;
   onRedraw?: (newWinners: Participant[]) => void;
   availableParticipants?: Participant[];
+  logoUrl?: string;
 }
 
-export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete, onBackToOverview, onReset, onRedraw, availableParticipants = [] }) => {
+export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize, onComplete, onBackToOverview, onReset, onRedraw, availableParticipants = [], logoUrl = '/sunnetlogo.svg' }) => {
   const [revealedWinners, setRevealedWinners] = useState<Participant[]>([]);
   const [showExplosion, setShowExplosion] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
   const [absentWinners, setAbsentWinners] = useState<Set<string>>(new Set());
+  const [permanentlyAbsentWinners, setPermanentlyAbsentWinners] = useState<Set<string>>(new Set());
   const hasInitializedRef = useRef(false);
   const onCompleteRef = useRef(onComplete);
   const winnersStringRef = useRef<string>('');
@@ -86,17 +88,27 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
       return;
     }
 
+    // 將當前被標記為不在場的人永久記錄
+    const updatedPermanentlyAbsent = new Set(permanentlyAbsentWinners);
+    absentWinners.forEach(id => updatedPermanentlyAbsent.add(id));
+    setPermanentlyAbsentWinners(updatedPermanentlyAbsent);
+
     // 直接在當前頁面重新抽獎
     const presentWinners = revealedWinners.filter(w => !absentWinners.has(w.id));
-    
-    // 從可用參與者中排除**所有當前中獎者**（包括在場和不在場的），然後隨機選取替代者
+
+    // 從可用參與者中排除：
+    // 1. 所有當前中獎者（在場的）
+    // 2. 所有曾經被標記為不在場的人（包括之前的重新抽獎）
     const allCurrentWinnerIds = new Set(revealedWinners.map(w => w.id));
-    const filteredParticipants = availableParticipants.filter(p => !allCurrentWinnerIds.has(p.id));
+    const filteredParticipants = availableParticipants.filter(p =>
+      !allCurrentWinnerIds.has(p.id) && !updatedPermanentlyAbsent.has(p.id)
+    );
 
     console.log('🔄 Redraw Debug:', {
       absentWinnersCount: absentWinners.size,
       presentWinnersCount: presentWinners.length,
       allWinnersCount: revealedWinners.length,
+      permanentlyAbsentCount: updatedPermanentlyAbsent.size,
       availableParticipantsCount: availableParticipants.length,
       filteredParticipantsCount: filteredParticipants.length
     });
@@ -105,25 +117,31 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
       alert(`可重新抽獎人數不足！需要 ${absentWinners.size} 人，目前可抽獎人數：${filteredParticipants.length}`);
       return;
     }
-    
+
     const shuffled = [...filteredParticipants].sort(() => Math.random() - 0.5);
     const newWinners = shuffled.slice(0, absentWinners.size);
-    
+
     console.log('🎯 New winners selected:', newWinners.map(w => w.name));
-    
+
     // 合併在場的中獎者和新抽取的中獎者
     const finalWinners = [...presentWinners, ...newWinners];
-    
+
     // 直接更新中獎者
     setRevealedWinners(finalWinners);
     setAbsentWinners(new Set());
-    
+
     // 通知父組件更新狀態
     onRedraw?.(finalWinners);
   };
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 flex items-center justify-center overflow-hidden">
+    <div className="fixed inset-0 bg-gradient-to-br from-[#f5f3e8] via-[#faf5f0] to-[#ffe5e5] flex items-center justify-center overflow-hidden">
+      {/* 背景圖片裝飾 - 四個角落各自不同旋轉角度 */}
+      <img src="/image copy.png" alt="" className="absolute top-0 right-0 w-64 h-64 object-contain opacity-60" />
+      <img src="/image copy.png" alt="" className="absolute bottom-0 left-0 w-48 h-48 object-contain opacity-70 transform scale-x-[-1]" />
+      <img src="/image copy.png" alt="" className="absolute top-20 left-10 w-56 h-56 object-contain opacity-50 transform scale-x-[-1] rotate-90" />
+      <img src="/image copy.png" alt="" className="absolute bottom-10 right-10 w-40 h-40 object-contain opacity-60 transform rotate-[-30deg]" />
+
       {/* 簡化的背景光芒效果 */}
       {showExplosion && (
         <div className="absolute inset-0 opacity-30">
@@ -146,17 +164,16 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({ winners, prize
 
       {/* 主要內容 - 使用 flex 布局 */}
       <div className="relative z-10 h-full flex flex-col">
-        {/* 獎項標題 - 固定在頂部 */}
-        <div className="flex-shrink-0 text-center px-6 pt-8 mb-6">
-          <div className="flex items-center justify-center mb-4">
-            <Trophy size={60} className="text-yellow-200 mr-4" />
-            <h2 className="text-6xl md:text-7xl lg:text-8xl font-black text-white drop-shadow-lg">
-              {prize.name}
-            </h2>
-            <Trophy size={60} className="text-yellow-200 ml-4" />
-          </div>
-          <div className="text-3xl md:text-4xl lg:text-5xl text-yellow-100 font-bold">
-            恭喜得獎者
+        {/* 獎項標題 - 固定在頂部，100%寬度 */}
+        <div className="flex-shrink-0 w-screen bg-gradient-to-r from-orange-500 to-orange-600 shadow-lg py-3 -mx-4">
+          <div className="px-4 md:px-6">
+            <div className="flex items-center justify-between gap-4">
+              <img src={logoUrl} alt="Logo" className="h-10 md:h-12 object-contain flex-shrink-0" />
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-black text-white drop-shadow-lg flex-1 text-center truncate">
+                {prize.name}
+              </h2>
+              <div className="w-10 md:w-12 flex-shrink-0"></div>
+            </div>
           </div>
         </div>
 

@@ -14,6 +14,7 @@ interface LotteryAnimationProps {
   onReset?: () => void;
   onRedraw?: (newWinners: Participant[]) => void;
   availableParticipants?: Participant[];
+  logoUrl?: string;
 }
 
 export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
@@ -25,7 +26,8 @@ export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
   onBackToOverview,
   onReset,
   onRedraw,
-  availableParticipants = []
+  availableParticipants = [],
+  logoUrl = '/sunnetlogo.svg'
 }) => {
   const [currentPhase, setCurrentPhase] = useState<AnimationState>('idle');
   const [winners, setWinners] = useState<Participant[]>([]);
@@ -76,7 +78,7 @@ export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
       )}
       
       {currentPhase === 'revealing' && (
-        <RevelationPhase 
+        <RevelationPhase
           key={`revelation-${prize.id}-${winners.map(w => w.id).sort().join('-')}`}
           winners={winners}
           prize={prize}
@@ -110,6 +112,7 @@ export const LotteryAnimation: React.FC<LotteryAnimationProps> = ({
             onRedraw?.(newWinners);
           }}
           availableParticipants={availableParticipants}
+          logoUrl={logoUrl}
         />
       )}
     </div>

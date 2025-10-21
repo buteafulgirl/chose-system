@@ -452,7 +452,7 @@ function App() {
             <img src={logoUrl} alt="Logo" className="h-10 md:h-12 object-contain flex-shrink-0" />
             <h1 className="text-xl md:text-2xl font-bold flex items-center gap-2 flex-1 justify-center">
               <Sparkles size={24} className="flex-shrink-0" />
-              <span className="truncate">{state === 'setup' ? '抽獎系統設定' : settings.title}</span>
+              <span className="truncate">{state === 'setup' ? '抽獎系統設定' : state === 'drawing' && currentPrize ? currentPrize.name : settings.title}</span>
               <Sparkles size={24} className="flex-shrink-0" />
             </h1>
             <div className="w-10 md:w-12 flex-shrink-0"></div>
@@ -645,6 +645,7 @@ function App() {
               onReset={resetLottery}
               onRedraw={handleRedraw}
               availableParticipants={availableForRedraw}
+              logoUrl={logoUrl}
             />
           </div>
         )}
