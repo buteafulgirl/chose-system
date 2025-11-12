@@ -5,7 +5,7 @@ import { ParticipantManager } from './components/ParticipantManager';
 import { LotterySettings } from './components/LotterySettings';
 import { LotteryOverview } from './components/LotteryOverview';
 import { LotteryAnimation } from './components/LotteryAnimation';
-import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, AnimationState, ParticipantList, ParticipantListData } from './types/lottery';
+import { Prize, Participant, LotterySettings as LotterySettingsType, LotteryConfig, ParticipantList, ParticipantListData } from './types/lottery';
 import * as XLSX from 'xlsx';
 
 type AppState = 'setup' | 'overview' | 'drawing';
@@ -23,13 +23,12 @@ function App() {
   ]);
   const [settings, setSettings] = useState<LotterySettingsType>({
     allowRepeat: false,
-    title: '2025產品聯合發表會'
+    title: '2025 AI數位學習平台 新品展銷會'
   });
   const [logoUrl, setLogoUrl] = useState<string>('/sunnetlogo.svg');
   const [currentPrize, setCurrentPrize] = useState<Prize | null>(null);
-  const [, setWinners] = useState<Participant[]>([]);
+  const [winners, setWinners] = useState<Participant[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
-  const [currentAnimationPhase, setCurrentAnimationPhase] = useState<AnimationState>('idle');
   const [allResults, setAllResults] = useState<{ prize: Prize; winners: Participant[] }[]>([]);
 
   const [effectiveParticipantsForDraw, setEffectiveParticipantsForDraw] = useState<Participant[]>([]);
@@ -52,6 +51,10 @@ function App() {
   const startPrizeDraw = (prize: Prize) => {
     console.log('🎯 Starting prize draw for:', prize.name);
 
+    // 檢查是否已經有該獎項的中獎者（重新進入情況）
+    const existingResult = allResults.find(r => r.prize.id === prize.id);
+    const existingWinners = existingResult?.winners || [];
+
     // 第一層過濾：根據名單篩選
     let listFiltered: Participant[] = [];
     if (prize.participantListId) {
@@ -68,23 +71,21 @@ function App() {
       ? listFiltered
       : listFiltered.filter(p => !p.isSelected);
 
-    if (availableParticipants.length < prize.drawCount) {
-      alert(`可抽獎人數不足！需要 ${prize.drawCount} 人，目前可抽獎人數：${availableParticipants.length}`);
+    // 計算還需要抽取的人數
+    const remainingDrawCount = prize.drawCount - existingWinners.length;
+
+    if (remainingDrawCount > 0 && availableParticipants.length < remainingDrawCount) {
+      alert(`可抽獎人數不足！需要 ${remainingDrawCount} 人，目前可抽獎人數：${availableParticipants.length}`);
       return;
     }
 
     setCurrentPrize(prize);
+    setWinners(existingWinners); // 設置已有的中獎者
     setEffectiveParticipantsForDraw(availableParticipants);
     setAvailableForRedraw(availableParticipants); // 設置可用於重新抽獎的參與者
     setState('drawing');
     setIsDrawing(true);
-    setCurrentAnimationPhase('preparing');
   };
-
-  const handleAnimationPhaseChange = useCallback((phase: AnimationState) => {
-    setCurrentAnimationPhase(phase);
-  }, []);
-
 
   // 專門處理按鈕點擊時的數據保存，不影響 isDrawing 狀態
   const handleWinnerDataSave = useCallback((selectedWinners: Participant[]) => {
@@ -131,7 +132,6 @@ function App() {
     setWinners([]);
     setCurrentPrize(null);
     setIsDrawing(false);
-    setCurrentAnimationPhase('idle');
     setAllResults([]);
     setParticipantLists(prev => prev.map(list => ({
       ...list,
@@ -147,7 +147,6 @@ function App() {
     setCurrentPrize(null);
     setWinners([]);
     setIsDrawing(false);
-    setCurrentAnimationPhase('idle');
     setEffectiveParticipantsForDraw([]);
     setAvailableForRedraw([]);
   };
@@ -612,42 +611,19 @@ function App() {
         )}
 
         {state === 'drawing' && currentPrize && (
-          <div className="relative">
-            {/* Status indicator (only visible during non-idle animation phases) */}
-            {currentAnimationPhase !== 'idle' && (
-              <div className="text-center mb-8">
-                <h2 className="text-3xl font-bold text-gray-800 mb-2">正在抽取</h2>
-                <div className="text-2xl text-orange-600 font-semibold">
-                  {currentPrize.name}（抽出 {Math.min(
-                    currentPrize.drawCount,
-                    effectiveParticipantsForDraw.length
-                  )} 人）
-                </div>
-                <div className="text-lg text-gray-600 mt-2">
-                  當前階段: {
-                    currentAnimationPhase === 'preparing' ? '準備中' :
-                    currentAnimationPhase === 'activating' ? '魔法啟動' :
-                    currentAnimationPhase === 'revealing' ? '揭曉結果' :
-                    currentAnimationPhase === 'celebrating' ? '慶祝中' :
-                    ''
-                  }
-                </div>
-              </div>
-            )}
-
-            <LotteryAnimation
-              isVisible={isDrawing}
-              participants={effectiveParticipantsForDraw}
-              prize={currentPrize}
-              onComplete={handleWinnerDataSave}
-              onPhaseChange={handleAnimationPhaseChange}
-              onBackToOverview={backToOverview}
-              onReset={resetLottery}
-              onRedraw={handleRedraw}
-              availableParticipants={availableForRedraw}
-              logoUrl={logoUrl}
-            />
-          </div>
+          <LotteryAnimation
+            isVisible={isDrawing}
+            participants={effectiveParticipantsForDraw}
+            prize={currentPrize}
+            onComplete={handleWinnerDataSave}
+            onBackToOverview={backToOverview}
+            onReset={resetLottery}
+            onRedraw={handleRedraw}
+            availableParticipants={availableForRedraw}
+            logoUrl={logoUrl}
+            allParticipants={participantLists.flatMap(l => l.participants)}
+            initialWinners={winners}
+          />
         )}
 
       </main>
