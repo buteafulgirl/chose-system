@@ -112,16 +112,15 @@ export const RevelationPhase: React.FC<RevelationPhaseProps> = ({
       needToDraw: remainingDrawCount,
     });
 
-    if (eligibleParticipants.length < remainingDrawCount) {
-      alert(
-        `可抽獎人數不足！需要 ${remainingDrawCount} 人，目前可抽獎人數：${eligibleParticipants.length}`
-      );
+    if (eligibleParticipants.length === 0) {
+      alert("沒有可抽取的參與者！");
       return;
     }
 
-    // 隨機抽取所有剩餘名額
+    // 隨機抽取所有剩餘名額（如果人數不足，就抽出所有可用人數）
+    const actualDrawCount = Math.min(eligibleParticipants.length, remainingDrawCount);
     const shuffled = [...eligibleParticipants].sort(() => Math.random() - 0.5);
-    const newWinners = shuffled.slice(0, remainingDrawCount);
+    const newWinners = shuffled.slice(0, actualDrawCount);
 
     // 更新中獎者列表
     const updatedWinners = [...currentWinners, ...newWinners];

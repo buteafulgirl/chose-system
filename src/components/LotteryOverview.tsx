@@ -73,10 +73,11 @@ export const LotteryOverview: React.FC<LotteryOverviewProps> = ({
         {prizes.map((prize) => {
           const status = getPrizeStatus(prize);
           const result = allResults.find((r) => r.prize.id === prize.id);
-          const canDraw = availableParticipants.length >= prize.drawCount;
           const remainingDrawCount = result
             ? prize.drawCount - result.winners.length
             : prize.drawCount;
+          const eligibleCount = getEligibleParticipantsCount(prize);
+          const canDraw = eligibleCount > 0; // 只要有至少 1 人可抽就允許
 
           return (
             <div
@@ -167,11 +168,6 @@ export const LotteryOverview: React.FC<LotteryOverviewProps> = ({
                     <div className="text-xs text-gray-600 text-center">
                       待抽人數：{getEligibleParticipantsCount(prize)} 人
                     </div>
-                    {!canDraw && (
-                      <div className="text-xs text-red-500 text-center">
-                        人數不足 (需要 {prize.drawCount} 人)
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

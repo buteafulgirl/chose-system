@@ -74,11 +74,6 @@ function App() {
     // 計算還需要抽取的人數
     const remainingDrawCount = prize.drawCount - existingWinners.length;
 
-    if (remainingDrawCount > 0 && availableParticipants.length < remainingDrawCount) {
-      alert(`可抽獎人數不足！需要 ${remainingDrawCount} 人，目前可抽獎人數：${availableParticipants.length}`);
-      return;
-    }
-
     setCurrentPrize(prize);
     setWinners(existingWinners); // 設置已有的中獎者
     setEffectiveParticipantsForDraw(availableParticipants);
